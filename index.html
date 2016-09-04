@@ -60,14 +60,13 @@
 	attribute vec3 aVertexPosition;
 	attribute vec2 aTextureCoord;
 
-	uniform mat4 uMVMatrix;
-	uniform mat4 uPMatrix;
-	
 	varying vec2 vTextureCoord;
 	
+	uniform float uAspect;
+	
 	void main(void) {
-		gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-		vTextureCoord = aTextureCoord;
+		gl_Position = vec4(aVertexPosition, 1.0);
+		vTextureCoord = vec2(aTextureCoord.s *uAspect, aTextureCoord.t);
 	}
 </script>
 
@@ -77,13 +76,16 @@
 
 //initially - simple shader that draws texture over the entire screen.
 
-var gl;	//context 
+var gl;	//context
+var screenAspect;
+
 //mostly from view-source:http://learningwebgl.com/lessons/lesson01/index.html
 function initGL(canvas){
 	try {
 		gl = canvas.getContext("webgl");
 		gl.viewportWidth = canvas.width;
 		gl.viewportHeight = canvas.height;
+		screenAspect = gl.viewportWidth/gl.viewportHeight;
 	} catch (e) {
 	}
 	if (!gl) {
@@ -133,11 +135,11 @@ var shaderProgramCubemap;
 function initShaders(){
 	shaderProgramTextured = loadShader( "shader-vs", "shader-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uPMatrix","uMVMatrix","uSampler","uVarOne","uVarTwo"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect"]
 					});
 	shaderProgramCubemap = loadShader( "shader-vs", "shader-fs-cube",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uPMatrix","uMVMatrix","uSampler","uVarOne","uVarTwo"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect"]
 					});
 }
 
@@ -171,12 +173,6 @@ function loadShader(vs_id,fs_id, obj) {
 
 	return shaderProgram;
 }
-
-function setMatrixUniforms(shaderProgram) {
-	gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
-	gl.uniformMatrix4fv(shaderProgram.uniforms.uMVMatrix, false, mvMatrix);
-}
-
 
 var squareVertexPositionBuffer,
 	squareVertexTextureCoordBuffer,
@@ -332,16 +328,6 @@ function drawScene(frameTime) {
 
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	mat4.identity(mvMatrix);
-	mat4.translate(mvMatrix, [0.0, 0.0, -2.4]);
-	
-	//mat4.rotateX(mvMatrix, -Math.PI*0.5);
-	//mat4.rotateX(mvMatrix, -1);
-	
-	//mat4.rotateZ(mvMatrix, frameTime/2000);
-	
-	//mat4.translate(mvMatrix, [-0.7,-0.7,0]);
-
 	//cubemapOn= true;
 	var activeProg;
 	if (cubemapOn){
@@ -369,28 +355,21 @@ function drawScene(frameTime) {
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.uniform1i(shaderProgramTextured.uniforms.uSampler, 0);
 	}
-	setMatrixUniforms(activeProg);
 	gl.uniform1f(activeProg.uniforms.uVarOne, parseFloat(document.getElementById("val1range").value));
 	gl.uniform1f(activeProg.uniforms.uVarTwo, parseFloat(document.getElementById("val2range").value));
+	
+	
+	gl.uniform1f(activeProg.uniforms.uAspect, screenAspect);
+	
 	
 	gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
 }
 
 
-
-
-
-
-//should probably get rid of this stuff
-//hopefully for a fullscreen shader don't need viewport stuff.
-var mvMatrix = mat4.create();
-var pMatrix = mat4.create();
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-	mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix);
 }
-
 
 
 </script>
