@@ -21,7 +21,7 @@
 		//gl_FragColor = texture2DProj(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 - 0.3*dot(vTextureCoord,vTextureCoord)));
 		
 		//tex2dproj divides the x and y components by z, so to offset, we should add offsetx*z, offsety*z to x,y
-		gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,1.0)*(2.0-0.3*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, vTextureCoord.t, 0.0));
+		gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,1.0)*(-0.3*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s + 1.0, vTextureCoord.t + 1.0, 2.0));
 		
 	}
 </script>
