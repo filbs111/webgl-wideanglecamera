@@ -14,14 +14,12 @@
 	uniform samplerCube uSampler;
 
 	uniform float uVarOne;
-	uniform float uVarTwo;
 	
 	void main(void) {
-		vec2 scaledTextureCoord=uVarTwo*vTextureCoord; 
-	
+		
 		//this works . 2 lines below equivalent. unsure which more efficient. maybe compile to same
-		gl_FragColor = textureCube(uSampler, vec3(scaledTextureCoord.s, scaledTextureCoord.t, 2.0 +uVarOne*dot(scaledTextureCoord,scaledTextureCoord)));
-		//gl_FragColor = textureCube(uSampler, vec3(0.0,0.0,1.0)*(uVarOne*dot(scaledTextureCoord,scaledTextureCoord)) + vec3(scaledTextureCoord.s , scaledTextureCoord.t  , 2.0));
+		gl_FragColor = textureCube(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 +uVarOne*dot(vTextureCoord,vTextureCoord)));
+		//gl_FragColor = textureCube(uSampler, vec3(0.0,0.0,1.0)*(uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s , vTextureCoord.t  , 2.0));
 		
 		//gl_FragColor = vec4(vTextureCoord.s,vTextureCoord.t,0.0,1.0);
 		//gl_FragColor = vec4(0.0,1.0,0.0,1.0);
@@ -37,11 +35,8 @@
 	uniform sampler2D uSampler;
 
 	uniform float uVarOne;
-	uniform float uVarTwo;
 
 	void main(void) {
-		vec2 scaledTextureCoord=uVarTwo*vTextureCoord;
-	
 		//this gives what appears to be right kind of effect.
 		//changing the 1st float zooms. (larger zooms in)
 		//changing the 2nd float adjusts the barrel effect (larger -ve for more effect)
@@ -50,7 +45,7 @@
 		//gl_FragColor = texture2DProj(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 - 0.3*dot(vTextureCoord,vTextureCoord)));
 		
 		//tex2dproj divides the x and y components by z, so to offset, we should add offsetx*z, offsety*z to x,y
-		gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,1.0)*(uVarOne*dot(scaledTextureCoord,scaledTextureCoord)) + vec3(scaledTextureCoord.s + 1.0, scaledTextureCoord.t + 1.0, 2.0));
+		gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,1.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, vTextureCoord.t, 0.0));
 		
 	}
 </script>
@@ -63,10 +58,11 @@
 	varying vec2 vTextureCoord;
 	
 	uniform float uAspect;
+	uniform float uVarTwo;	//note the multiplication of uVarTwo*uAspect could be skipped by passing in uVarTwo*uAspect , uVarTwo as uniforms
 	
 	void main(void) {
 		gl_Position = vec4(aVertexPosition, 1.0);
-		vTextureCoord = vec2(aTextureCoord.s *uAspect, aTextureCoord.t);
+		vTextureCoord = vec2(aTextureCoord.s*uVarTwo*uAspect, aTextureCoord.t*uVarTwo);
 	}
 </script>
 
