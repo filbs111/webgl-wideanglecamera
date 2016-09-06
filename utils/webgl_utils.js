@@ -50,3 +50,33 @@ function getShader(gl, id) {
 
 	return shader;
 }
+
+function loadShader(vs_id,fs_id, obj) {
+	var fragmentShader = getShader(gl, vs_id);		//TODO check whether shader already got
+	var vertexShader = getShader(gl, fs_id);
+
+	var shaderProgram = gl.createProgram();
+	gl.attachShader(shaderProgram, vertexShader);
+	gl.attachShader(shaderProgram, fragmentShader);
+	gl.linkProgram(shaderProgram);
+
+	if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+		alert("Could not initialise shaders");
+	}
+
+	shaderProgram.uniforms={};
+	shaderProgram.attributes={};
+	progUniforms = shaderProgram.uniforms;
+	progAttributes = shaderProgram.attributes;
+	
+	obj.attributes.forEach(function(item, index){
+		progAttributes[item] = gl.getAttribLocation(shaderProgram, item);
+		gl.enableVertexAttribArray(progAttributes[item]);
+	});
+	obj.uniforms.forEach(function(item, index){
+		console.log("getting uniform location for " + item);
+		progUniforms[item] = gl.getUniformLocation(shaderProgram, item);
+	});
+
+	return shaderProgram;
+}
