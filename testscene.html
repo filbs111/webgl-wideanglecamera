@@ -146,6 +146,8 @@ var mvMatrix = mat4.create();
 var pMatrix = mat4.create();
 var nMatrix = mat3.create();
 
+var playerMatrix = mat4.create();
+
 function setMatrixUniforms(shaderProgram) {
     gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
     gl.uniformMatrix4fv(shaderProgram.uniforms.uMVMatrix, false, mvMatrix);
@@ -250,7 +252,7 @@ function drawScene(frameTime) {
 	
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        mat4.identity(mvMatrix);
+		setMVMatToPlayer();
         mat4.translate(mvMatrix, [0.0, 0.0, -10]);
 		
 		gl.useProgram(shaderProgramColored);
@@ -263,21 +265,26 @@ function drawScene(frameTime) {
 		var angStep = Math.PI/8;
 		
 		gl.uniform4fv(shaderProgramColored.uniforms.uColor, [1.0, 1.0, 0.0, 1.0]);
-		mat4.identity(mvMatrix);
+		setMVMatToPlayer();
 		mat4.rotateZ(mvMatrix,Math.PI/2);
 		
 		drawBallRing();
 		
 		gl.uniform4fv(shaderProgramColored.uniforms.uColor, [0.0, 1.0, 0.0, 1.0]);
-		mat4.identity(mvMatrix);
+		setMVMatToPlayer();
 		
 		drawBallRing();
 		
 		gl.uniform4fv(shaderProgramColored.uniforms.uColor, [0.0, 0.0, 1.0, 1.0]);
-		mat4.identity(mvMatrix);
+		setMVMatToPlayer();
 		mat4.rotateY(mvMatrix,Math.PI/2);
 		drawBallRing();
 		
+		function setMVMatToPlayer(){
+			//mvMatrix= mat4.clone(playerMatrix);	//can apparently do this in a newer version of glMatrix
+			mvMatrix = mat4.create();
+			mat4.set(playerMatrix, mvMatrix);
+		}
 		
 		function drawBallRing(){
 			mat4.rotateX(mvMatrix, angStep/2);
@@ -309,11 +316,33 @@ function drawSphere(){
 
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-	mat4.perspective(170, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix);
+	mat4.perspective(90, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix);
+	
+	mat4.identity(playerMatrix);
 }
 
 
 function init(){
+
+	window.addEventListener("keydown",function(evt){
+		console.log("key pressed : " + evt.keyCode);
+		switch (evt.keyCode){
+			case 38:
+				movePlayer(0.1);
+				break;
+			case 40:
+				movePlayer(-0.1);
+				break;
+			case 39:
+				turnPlayer(0.02);
+				break;
+			case 37:
+				turnPlayer(-0.02);
+				break;
+		}
+	})
+
+
 	initGL(document.getElementById("mycanvas"));
 	initShaders();
 	
@@ -324,7 +353,37 @@ function init(){
 	requestAnimationFrame(drawScene);
 }
 
+var playerPosition = [0,0,0];
+function movePlayer(amount){
+	//mat4.translate(playerMatrix,[0,0,amount]);
+	
+	playerPosition[0] += amount*playerMatrix[2];
+	playerPosition[1] += amount*playerMatrix[6];
+	playerPosition[2] += amount*playerMatrix[10];
+	setPlayerTranslation(playerPosition);
+	
+	//mat4.translate(playerMatrix, [amount*playerMatrix[2], amount*playerMatrix[6], amount*playerMatrix[10]]);
+	console.log("" + playerMatrix[0] + ", " + playerMatrix[1] + ", " + playerMatrix[2] + ", " + playerMatrix[3] + ",\n"
+				+ playerMatrix[4] + ", " + playerMatrix[5] + ", " + playerMatrix[6] + ", " + playerMatrix[7] + ", \n"
+				+ playerMatrix[8] + ", " + playerMatrix[9] + ", " + playerMatrix[10] + ", " + playerMatrix[11] + ", \n"
+				+ playerMatrix[12] + ", " + playerMatrix[13] + ", " + playerMatrix[14] + ", " + playerMatrix[15] + ", \n"
+				);
+}
+function turnPlayer(amount){
+	playerMatrix[12]=0;	//zero translation components
+	playerMatrix[13]=0;
+	playerMatrix[14]=0;
+	setPlayerTranslation([0,0,0]);	
+	mat4.rotateY(playerMatrix, amount);
+	setPlayerTranslation(playerPosition);
+}
 
+function setPlayerTranslation(posArray){
+	playerMatrix[12]=0;	//zero translation components
+	playerMatrix[13]=0;
+	playerMatrix[14]=0;
+	mat4.translate(playerMatrix, posArray);
+}
 
 
 </script>
