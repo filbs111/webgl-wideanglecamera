@@ -56,6 +56,7 @@
 
 
 <script type="text/javascript" src="utils/webgl_utils.js"></script>
+<script type="text/javascript" src="data/sphere.js"></script>
 <script type="text/javascript" src="data/levelCubeData.js"></script>
 
 <script type="text/javascript">
@@ -99,13 +100,6 @@ function setMatrixUniforms(shaderProgram) {
 }
 
 
-//drawing a sphere.
-//from http://learningwebgl.com/cookbook/index.php/How_to_draw_a_sphere
-
-var latitudeBands = 8;
-var longitudeBands = 16;
-var radius = 1.3;
-
 var vertexPositionBuffer;
 //var vertexNormalBuffer;
 //var vertexTextureCoordBuffer;
@@ -116,57 +110,12 @@ var cubeVertexTextureCoordBuffer;
 var cubeVertexIndexBuffer;
 
 function initBuffers(){
-	var vertexPositionData = [];
-	var normalData = [];
-	var textureCoordData = [];
-
-	//this appears do duplicate vertices along seem but what the hey
-	//to do this properly probably should just make a geosphere and subdivide
-	//eg http://www.html5gamedevs.com/topic/17786-icosphere-20-sides-polyhedron-uv-subdivide-smoothflat-normals/
-	for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
-		var theta = latNumber * Math.PI / latitudeBands;
-		var sinTheta = Math.sin(theta);
-		var cosTheta = Math.cos(theta);
-		
-		for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
-		 var phi = longNumber * 2 * Math.PI / longitudeBands;
-		 var sinPhi = Math.sin(phi);
-		 var cosPhi = Math.cos(phi);
-		
-		 var x = cosPhi * sinTheta;
-		 var y = cosTheta;
-		 var z = sinPhi * sinTheta;
-		 var u = 1- (longNumber / longitudeBands);
-		 var v = latNumber / latitudeBands;
-		
-		 normalData.push(x);
-		 normalData.push(y);
-		 normalData.push(z);
-		 textureCoordData.push(u);
-		 textureCoordData.push(v);
-		 vertexPositionData.push(radius * x);
-		 vertexPositionData.push(radius * y);
-		 vertexPositionData.push(radius * z);
-	   }
-	}
-
-	var indexData = [];
-	 for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
-	   for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
-		 var first = (latNumber * (longitudeBands + 1)) + longNumber;
-		 var second = first + longitudeBands + 1;
-		 indexData.push(first);
-		 indexData.push(second);
-		 indexData.push(first + 1);
-		 indexData.push(second);
-		 indexData.push(second + 1);
-		 indexData.push(first + 1);
-	   }
-	}
+	var sphereData = makeSphereData(8,16,1.3);
 
 	vertexPositionBuffer = gl.createBuffer();
-	bufferArrayData(vertexPositionBuffer, vertexPositionData, 3);
+	bufferArrayData(vertexPositionBuffer, sphereData.vertices, 3);
 
+	var indexData = sphereData.indices;
 	vertexIndexBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
