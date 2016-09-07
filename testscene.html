@@ -56,7 +56,7 @@
 
 
 <script type="text/javascript" src="utils/webgl_utils.js"></script>
-
+<script type="text/javascript" src="data/levelCubeData.js"></script>
 
 <script type="text/javascript">
 //will make a simple test scene in this project, with view to combining with code to do stereographic projection
@@ -174,101 +174,18 @@ function initBuffers(){
 	vertexIndexBuffer.numItems = indexData.length;
 	
 	
-	//level cube
-	var cubeVerts = [
-      // Front face
-      -1.0, -1.0,  1.0,
-       1.0, -1.0,  1.0,
-       1.0,  1.0,  1.0,
-      -1.0,  1.0,  1.0,
-
-      // Back face
-      -1.0, -1.0, -1.0,
-      -1.0,  1.0, -1.0,
-       1.0,  1.0, -1.0,
-       1.0, -1.0, -1.0,
-
-      // Top face
-      -1.0,  1.0, -1.0,
-      -1.0,  1.0,  1.0,
-       1.0,  1.0,  1.0,
-       1.0,  1.0, -1.0,
-
-      // Bottom face
-      -1.0, -1.0, -1.0,
-       1.0, -1.0, -1.0,
-       1.0, -1.0,  1.0,
-      -1.0, -1.0,  1.0,
-
-      // Right face
-       1.0, -1.0, -1.0,
-       1.0,  1.0, -1.0,
-       1.0,  1.0,  1.0,
-       1.0, -1.0,  1.0,
-
-      // Left face
-      -1.0, -1.0, -1.0,
-      -1.0, -1.0,  1.0,
-      -1.0,  1.0,  1.0,
-      -1.0,  1.0, -1.0,
-    ];
-	var cubeUvs = [
-      // Front face
-      0.0, 0.0,
-      1.0, 0.0,
-      1.0, 1.0,
-      0.0, 1.0,
-
-      // Back face
-      1.0, 0.0,
-      1.0, 1.0,
-      0.0, 1.0,
-      0.0, 0.0,
-
-      // Top face
-      0.0, 1.0,
-      0.0, 0.0,
-      1.0, 0.0,
-      1.0, 1.0,
-
-      // Bottom face
-      1.0, 1.0,
-      0.0, 1.0,
-      0.0, 0.0,
-      1.0, 0.0,
-
-      // Right face
-      1.0, 0.0,
-      1.0, 1.0,
-      0.0, 1.0,
-      0.0, 0.0,
-
-      // Left face
-      0.0, 0.0,
-      1.0, 0.0,
-      1.0, 1.0,
-      0.0, 1.0,
-    ];
-	var cubeIndices=[
-      0, 1, 2,      0, 2, 3,    // Front face
-      4, 5, 6,      4, 6, 7,    // Back face
-      8, 9, 10,     8, 10, 11,  // Top face
-      12, 13, 14,   12, 14, 15, // Bottom face
-      16, 17, 18,   16, 18, 19, // Right face
-      20, 21, 22,   20, 22, 23  // Left face
-    ];
-	
+	//level cube. data is in data/levelCubeData.js
 	cubeVertexPositionBuffer= gl.createBuffer();
-	bufferArrayData(cubeVertexPositionBuffer, cubeVerts, 3);
+	bufferArrayData(cubeVertexPositionBuffer, levelCubeData.vertices, 3);
 	
 	cubeVertexTextureCoordBuffer= gl.createBuffer();
-	bufferArrayData(cubeVertexTextureCoordBuffer, cubeUvs, 2);
+	bufferArrayData(cubeVertexTextureCoordBuffer, levelCubeData.uvcoords, 2);
 	
 	cubeVertexIndexBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeIndices), gl.STATIC_DRAW);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(levelCubeData.indices), gl.STATIC_DRAW);
 	cubeVertexIndexBuffer.itemSize = 3;
-	cubeVertexIndexBuffer.numItems = cubeIndices.length;
+	cubeVertexIndexBuffer.numItems = levelCubeData.indices.length;
 	
 	function bufferArrayData(buffer, arr, size){
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
