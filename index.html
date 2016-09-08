@@ -45,7 +45,7 @@
 		//gl_FragColor = texture2DProj(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 - 0.3*dot(vTextureCoord,vTextureCoord)));
 		
 		//tex2dproj divides the x and y components by z, so to offset, we should add offsetx*z, offsety*z to x,y
-		gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,1.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, vTextureCoord.t, 0.0));
+		gl_FragColor = texture2DProj(uSampler, vec3(1.0,1.0,2.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, vTextureCoord.t, 0.0));
 		
 	}
 </script>
@@ -141,7 +141,7 @@ function initBuffers() {
 function handleLoadedTexture(texture) {
 	console.log("handling loaded texture");
 	gl.bindTexture(gl.TEXTURE_2D, texture);
-	//gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);		
@@ -169,7 +169,7 @@ function loadCubeMap(base)
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
 	var faces = [["posx.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
@@ -190,7 +190,7 @@ function loadCubeMap(base)
 				image_counter++;
 				if (image_counter == 6)
 				{
-					gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+					//gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
 				}
 				//requestAnimationFrame(draw);
 			}

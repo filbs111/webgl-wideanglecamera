@@ -153,6 +153,7 @@ function drawScene(frameTime) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 		setMVMatToPlayer();
+		mat4.rotateX(mvMatrix,Math.PI);	//turn upside down so texture looks right
 		mat4.scale(mvMatrix, [10,10,10]);
 
 		//draw level cube
