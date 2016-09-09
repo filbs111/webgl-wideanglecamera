@@ -22,6 +22,7 @@
 	uniform float uVarOne;
 
 	void main(void) {
+		float aspect=2.0;
 		//this gives what appears to be right kind of effect.
 		//changing the 1st float zooms. (larger zooms in)
 		//changing the 2nd float adjusts the barrel effect (larger -ve for more effect)
@@ -30,7 +31,7 @@
 		//gl_FragColor = texture2DProj(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 - 0.3*dot(vTextureCoord,vTextureCoord)));
 		
 		//tex2dproj divides the x and y components by z, so to offset, we should add offsetx*z, offsety*z to x,y
-		gl_FragColor = texture2DProj(uSampler, vec3(1.0,1.0,2.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, vTextureCoord.t, 0.0));
+		gl_FragColor = texture2DProj(uSampler, vec3(1.0,1.0,2.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, aspect*vTextureCoord.t, 0.0));
 		
 	}
 </script>
@@ -255,7 +256,7 @@ function drawScene(frameTime){
 		gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 		gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		mat4.perspective(150, rttFramebuffer.width/ rttFramebuffer.height, 0.1, 100, pMatrix);
+		mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, 0.1, 100, pMatrix);	//FOV set 
 	
         drawWorldScene(frameTime);
 		
@@ -404,11 +405,21 @@ function drawSphere(){
 //from http://learningwebgl.com/blog/?p=1786
 var rttFramebuffer;
 var rttTexture;
+
+var rttView={
+	fx:4,
+	fy:2,
+	//sizeX:2048,
+	//sizeY:1024
+	sizeX:4096,
+	sizeY:2048
+};
+
 function initTextureFramebuffer() {
 	rttFramebuffer = gl.createFramebuffer();
 	gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-	rttFramebuffer.width = 2048;	//TODO 2048x1024 would work better for single texture with 16:9 final output
-	rttFramebuffer.height = 2048;
+	rttFramebuffer.width = rttView.sizeX;	//TODO 2048x1024 would work better for single texture with 16:9 final output
+	rttFramebuffer.height = rttView.sizeY;
 
 	rttTexture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, rttTexture);
@@ -526,7 +537,7 @@ function setPlayerTranslation(posArray){
 <br/>
 Render to texture: <input type="checkbox" id="renderToTexture">
 <input type="range" id="val1range" min="-1.5" max="0.5" value="0.0" step="0.025" name="val1">
-<input type="range" id="val2range" min="0.5" max="1.0" value="2.0" step="0.05" name="val1">
+<input type="range" id="val2range" min="0.1" max="2.0" value="2.0" step="0.025" name="val1">
 
 
 
