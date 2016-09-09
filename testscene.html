@@ -9,6 +9,50 @@
 
 <script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
 
+
+
+
+<!-- simple texture mapped pix shader -->
+<script id="shader-fullscreen-singletex-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	
+	varying vec2 vTextureCoord;
+	uniform sampler2D uSampler;
+
+	uniform float uVarOne;
+
+	void main(void) {
+		//this gives what appears to be right kind of effect.
+		//changing the 1st float zooms. (larger zooms in)
+		//changing the 2nd float adjusts the barrel effect (larger -ve for more effect)
+
+		//this works but corner of texture ends up in middle of screen
+		//gl_FragColor = texture2DProj(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 - 0.3*dot(vTextureCoord,vTextureCoord)));
+		
+		//tex2dproj divides the x and y components by z, so to offset, we should add offsetx*z, offsety*z to x,y
+		gl_FragColor = texture2DProj(uSampler, vec3(1.0,1.0,2.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, vTextureCoord.t, 0.0));
+		
+	}
+</script>
+
+<!-- vertex shader -->
+<script id="shader-fullscreen-singletex-vs" type="x-shader/x-vertex">
+	attribute vec3 aVertexPosition;
+	attribute vec2 aTextureCoord;
+
+	varying vec2 vTextureCoord;
+	
+	uniform float uAspect;
+	uniform float uVarTwo;	//note the multiplication of uVarTwo*uAspect could be skipped by passing in uVarTwo*uAspect , uVarTwo as uniforms
+	
+	void main(void) {
+		gl_Position = vec4(aVertexPosition, 1.0);
+		vTextureCoord = vec2(aTextureCoord.s*uVarTwo*uAspect, aTextureCoord.t*uVarTwo);
+	}
+</script>
+
+
+
 <!-- tex mapped pix shader -->
 <script id="shader-texmap-fs" type="x-shader/x-fragment">
 	precision mediump float;
@@ -76,7 +120,12 @@
 
 var shaderProgramTexmap;
 var shaderProgramColored;
-function initShaders(){		
+function initShaders(){	
+	shaderProgramFullscreenTextured = loadShader( "shader-fullscreen-singletex-vs", "shader-fullscreen-singletex-fs",{
+					attributes:["aVertexPosition","aTextureCoord"],
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect"]
+					});
+
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
 					attributes:["aVertexPosition"],
 					uniforms:["uPMatrix","uMVMatrix","uColor"]
@@ -98,6 +147,55 @@ function setMatrixUniforms(shaderProgram) {
     gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
     gl.uniformMatrix4fv(shaderProgram.uniforms.uMVMatrix, false, mvMatrix);
 }
+
+
+
+var squareVertexPositionBuffer,
+	squareVertexTextureCoordBuffer,
+	squareVertexIndexBuffer;
+
+function initFullscreenBuffers() {
+		//a simple quad. use indexed since this hass more in common with other 
+		//webgl stuff i've written. triangle strip is maybe slightly more efficient
+       
+		var vertices = [
+			-1,-1,0,
+			-1,1,0,
+			1,-1,0,
+			1,1,0
+		];
+		var textureCoords = [
+			-1,-1,
+			-1,1,
+			1,-1,
+			1,1
+		];
+		
+		var indices = [
+			0,1,2,
+			1,2,3
+		]
+		
+		
+		squareVertexPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        squareVertexPositionBuffer.itemSize = 3;
+        squareVertexPositionBuffer.numItems = 4;
+		
+		squareVertexTextureCoordBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexTextureCoordBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+        squareVertexTextureCoordBuffer.itemSize = 2;
+        squareVertexTextureCoordBuffer.numItems = 4;
+		
+		squareVertexIndexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+        squareVertexIndexBuffer.itemSize = 1;
+        squareVertexIndexBuffer.numItems = 6;
+}
+
 
 
 var vertexPositionBuffer;
@@ -144,10 +242,76 @@ function initBuffers(){
 	}
 }
 
+function drawScene(frameTime){
+	requestAnimationFrame(drawScene);
+	
+	//simple render direct to screen
+	if (!document.getElementById("renderToTexture").checked){
+		//draw the scene straight to the screen
+		mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix);
+		drawWorldScene(frameTime);
+	} else {
+		//draw the scene to offscreen framebuffer
+		gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
+		gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		mat4.perspective(150, rttFramebuffer.width/ rttFramebuffer.height, 0.1, 100, pMatrix);
+	
+        drawWorldScene(frameTime);
+		
+		//setup for drawing to screen
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+		
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		
+		//set just drawn texture as active for drawing to screen
+		gl.enableVertexAttribArray(1);
+		gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+        //gl.generateMipmap(gl.TEXTURE_2D);
+        //gl.bindTexture(gl.TEXTURE_2D, null);
+		
+		//draw the simple quad object to the screen
+
+		var cubemapOn=false;	//will add cubemap later.
+		var activeProg;
+		if (cubemapOn){
+			activeProg = shaderProgramCubemap;	//doesn't exist here yet
+		} else {
+			activeProg = shaderProgramFullscreenTextured;
+		}
+		gl.useProgram(activeProg);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
+		gl.vertexAttribPointer(activeProg.attributes.aVertexPosition, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		
+		gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexTextureCoordBuffer);
+		gl.vertexAttribPointer(activeProg.attributes.aTextureCoord, squareVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer);
+		
+		if (cubemapOn){
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemaptexture);
+			gl.uniform1i(shaderProgramCubemap.uniforms.uSampler, 0);
+		}else{
+			gl.activeTexture(gl.TEXTURE0);
+			//gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+			gl.uniform1i(shaderProgramFullscreenTextured.uniforms.uSampler, 0);
+		}
+		gl.uniform1f(activeProg.uniforms.uVarOne, parseFloat(document.getElementById("val1range").value));
+		gl.uniform1f(activeProg.uniforms.uVarTwo, parseFloat(document.getElementById("val2range").value));
+		
+		gl.uniform1f(activeProg.uniforms.uAspect, screenAspect);
+		
+		gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+		
+	}
+}
 
 
-function drawScene(frameTime) {
-		requestAnimationFrame(drawScene);
+function drawWorldScene(frameTime) {
+		
 		//console.log("drawing...");
 	
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -237,14 +401,39 @@ function drawSphere(){
 }
 
 
+//from http://learningwebgl.com/blog/?p=1786
+var rttFramebuffer;
+var rttTexture;
+function initTextureFramebuffer() {
+	rttFramebuffer = gl.createFramebuffer();
+	gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
+	rttFramebuffer.width = 2048;	//TODO 2048x1024 would work better for single texture with 16:9 final output
+	rttFramebuffer.height = 2048;
 
+	rttTexture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	//gl.generateMipmap(gl.TEXTURE_2D);
 
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
+	var renderbuffer = gl.createRenderbuffer();
+	gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+	gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, rttFramebuffer.width, rttFramebuffer.height);
+
+	gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rttTexture, 0);
+	gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+
+	gl.bindTexture(gl.TEXTURE_2D, null);
+	gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
 
 
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-	mat4.perspective(90, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix);
 	
 	mat4.identity(playerMatrix);
 }
@@ -288,8 +477,10 @@ function init(){
 
 
 	initGL(document.getElementById("mycanvas"));
+	initTextureFramebuffer();
 	initShaders();
 	initTexture();
+	initFullscreenBuffers();
 	initBuffers();
 	gl.clearColor(0.0, 0.1, 0.1, 1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -332,7 +523,10 @@ function setPlayerTranslation(posArray){
 <body onload="init()">
 <canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>
 
-
+<br/>
+Render to texture: <input type="checkbox" id="renderToTexture">
+<input type="range" id="val1range" min="-1.5" max="0.5" value="0.0" step="0.025" name="val1">
+<input type="range" id="val2range" min="0.5" max="1.0" value="2.0" step="0.05" name="val1">
 
 
 
