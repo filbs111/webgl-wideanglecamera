@@ -283,6 +283,7 @@ function drawScene(frameTime){
 		setLevelTintColor([1.0,1.0,1.0,1.0]);
 		
 		mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix);
+		mat4.set(playerMatrix, playerCamera);
 		drawWorldScene(frameTime, 0);
 	} else {
 		if (rendertype == "singletex"){
@@ -294,6 +295,7 @@ function drawScene(frameTime){
 			gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, 0.1, 100, pMatrix);	//FOV set 
+			mat4.set(playerMatrix, playerCamera);
 			drawWorldScene(frameTime, 0);
 		}else{
 		
@@ -329,7 +331,6 @@ function drawScene(frameTime){
 				mat4.rotateX(playerCamera, rotsX[ii]);
 				
 				mat4.multiply(playerCamera, playerMatrix, playerCamera);
-				
 				drawWorldScene(frameTime);
 			}
 		}
