@@ -38,9 +38,9 @@
 	uniform sampler2D uSampler;
 
 	uniform float uVarOne;
-
+	uniform vec2 uInvF;
+	
 	void main(void) {
-		float aspect=2.0;
 		//this gives what appears to be right kind of effect.
 		//changing the 1st float zooms. (larger zooms in)
 		//changing the 2nd float adjusts the barrel effect (larger -ve for more effect)
@@ -49,7 +49,7 @@
 		//gl_FragColor = texture2DProj(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 - 0.3*dot(vTextureCoord,vTextureCoord)));
 		
 		//tex2dproj divides the x and y components by z, so to offset, we should add offsetx*z, offsety*z to x,y
-		gl_FragColor = texture2DProj(uSampler, vec3(1.0,1.0,2.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s, aspect*vTextureCoord.t, 0.0));
+		gl_FragColor = texture2DProj(uSampler, vec3(1.0,1.0,2.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(uInvF.s*vTextureCoord.s, uInvF.t*vTextureCoord.t, 0.0));
 		
 	}
 </script>
@@ -143,7 +143,7 @@ var shaderProgramColored;
 function initShaders(){	
 	shaderProgramFullscreenTextured = loadShader( "shader-fullscreen-vs", "shader-fullscreen-singletex-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF"]
 					});
 	shaderProgramFullscreenCubemap = loadShader( "shader-fullscreen-vs", "shader-fullscreen-cube-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
@@ -377,7 +377,14 @@ function drawScene(frameTime){
 		gl.uniform1f(activeProg.uniforms.uVarOne, parseFloat(document.getElementById("val1range").value));
 		gl.uniform1f(activeProg.uniforms.uVarTwo, parseFloat(document.getElementById("val2range").value));
 		
+		
 		gl.uniform1f(activeProg.uniforms.uAspect, screenAspect);
+		if (rendertype == "cubemap"){
+			
+		}else{
+			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/rttView.fx, 1.0/rttView.fy]);
+			//gl.uniform2fv(activeProg.uniforms.uInvF, [1.0, 1.0]);
+		}
 		
 		gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 		
@@ -481,10 +488,8 @@ var rttTexture;
 var rttView={
 	fx:4,
 	fy:2,
-	//sizeX:2048,
-	//sizeY:1024
-	sizeX:4096,
-	sizeY:2048
+	sizeX:2048,
+	sizeY:1024
 };
 
 function initTextureFramebuffer() {
