@@ -9,7 +9,25 @@
 
 <script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
 
+<!-- cube mapping for FOV>180 -->
+<script id="shader-fullscreen-cube-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	
+	varying vec2 vTextureCoord;
+	uniform samplerCube uSampler;
 
+	uniform float uVarOne;
+	
+	void main(void) {
+		
+		//this works . 2 lines below equivalent. unsure which more efficient. maybe compile to same
+		gl_FragColor = textureCube(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 +uVarOne*dot(vTextureCoord,vTextureCoord)));
+		//gl_FragColor = textureCube(uSampler, vec3(0.0,0.0,1.0)*(uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s , vTextureCoord.t  , 2.0));
+		
+		//gl_FragColor = vec4(vTextureCoord.s,vTextureCoord.t,0.0,1.0);
+		//gl_FragColor = vec4(0.0,1.0,0.0,1.0);
+	}
+</script>
 
 
 <!-- simple texture mapped pix shader -->
@@ -37,7 +55,7 @@
 </script>
 
 <!-- vertex shader -->
-<script id="shader-fullscreen-singletex-vs" type="x-shader/x-vertex">
+<script id="shader-fullscreen-vs" type="x-shader/x-vertex">
 	attribute vec3 aVertexPosition;
 	attribute vec2 aTextureCoord;
 
@@ -122,7 +140,11 @@
 var shaderProgramTexmap;
 var shaderProgramColored;
 function initShaders(){	
-	shaderProgramFullscreenTextured = loadShader( "shader-fullscreen-singletex-vs", "shader-fullscreen-singletex-fs",{
+	shaderProgramFullscreenTextured = loadShader( "shader-fullscreen-vs", "shader-fullscreen-singletex-fs",{
+					attributes:["aVertexPosition","aTextureCoord"],
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect"]
+					});
+	shaderProgramFullscreenCubemap = loadShader( "shader-fullscreen-vs", "shader-fullscreen-cube-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
 					uniforms:["uSampler","uVarOne","uVarTwo","uAspect"]
 					});
@@ -247,18 +269,31 @@ function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 	
 	//simple render direct to screen
-	if (!document.getElementById("renderToTexture").checked){
+	var rendertype = document.querySelector('input[name="rendertype"]:checked').value;
+	
+	if (rendertype == "straight"){
 		//draw the scene straight to the screen
 		mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix);
 		drawWorldScene(frameTime);
 	} else {
-		//draw the scene to offscreen framebuffer
-		gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-		gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, 0.1, 100, pMatrix);	//FOV set 
-	
-        drawWorldScene(frameTime);
+		if (rendertype == "singletex"){
+			//draw the scene to offscreen framebuffer
+			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
+			gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, 0.1, 100, pMatrix);	//FOV set 
+			drawWorldScene(frameTime);
+		}else{
+			//do the same thing for cube map
+			for (var ii=0;ii<6;ii++){
+				var framebuffer = cubemapFramebuffer[ii];
+				gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+				gl.viewport(0, 0, framebuffer.width, framebuffer.height);
+				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				mat4.perspective(90.0, 1.0, 0.1, 100, pMatrix);	//FOV set 
+				drawWorldScene(frameTime);
+			}
+		}
 		
 		//setup for drawing to screen
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -274,10 +309,9 @@ function drawScene(frameTime){
 		
 		//draw the simple quad object to the screen
 
-		var cubemapOn=false;	//will add cubemap later.
 		var activeProg;
-		if (cubemapOn){
-			activeProg = shaderProgramCubemap;	//doesn't exist here yet
+		if (rendertype == "cubemap"){
+			activeProg = shaderProgramFullscreenCubemap;	//doesn't exist here yet
 		} else {
 			activeProg = shaderProgramFullscreenTextured;
 		}
@@ -291,10 +325,10 @@ function drawScene(frameTime){
 		
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer);
 		
-		if (cubemapOn){
+		if (rendertype == "cubemap"){
 			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemaptexture);
-			gl.uniform1i(shaderProgramCubemap.uniforms.uSampler, 0);
+			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+			gl.uniform1i(shaderProgramFullscreenCubemap.uniforms.uSampler, 0);
 		}else{
 			gl.activeTexture(gl.TEXTURE0);
 			//gl.bindTexture(gl.TEXTURE_2D, rttTexture);
@@ -443,6 +477,53 @@ function initTextureFramebuffer() {
 }
 
 
+var cubemapFramebuffer;
+var cubemapTexture;
+var cubemapSize = 1024;
+//cube map code from http://www.humus.name/cubemapviewer.js (slightly modified)
+function initCubemapFramebuffer()
+{
+	cubemapFramebuffer = [];
+
+	cubemapTexture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+	var faces = [gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+				 gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+				 gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+				 gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+				 gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+				 gl.TEXTURE_CUBE_MAP_NEGATIVE_Z];
+	for (var i = 0; i < faces.length; i++)
+	{
+		var face = faces[i];
+		
+		var framebuffer = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+		framebuffer.width = cubemapSize;
+		framebuffer.height = cubemapSize;
+		cubemapFramebuffer[i]=framebuffer;
+		
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);	//already bound so can lose probably
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+		//gl.texImage2D(face, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+		gl.texImage2D(face, 0, gl.RGBA, cubemapSize, cubemapSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		
+		var renderbuffer = gl.createRenderbuffer();
+		gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, cubemapSize, cubemapSize);
+		
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, face, cubemapTexture, 0);
+		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);	///???? how to connect to render buffer of cubemap? does cubemap have multiple render buffers?
+		
+	}
+}
+
+
 function setupScene() {
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 	
@@ -492,6 +573,7 @@ function init(){
 	initShaders();
 	initTexture();
 	initFullscreenBuffers();
+	initCubemapFramebuffer();	//experimental!!
 	initBuffers();
 	gl.clearColor(0.0, 0.1, 0.1, 1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -535,9 +617,14 @@ function setPlayerTranslation(posArray){
 <canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>
 
 <br/>
-Render to texture: <input type="checkbox" id="renderToTexture">
+<form>
+  Render to texture: 
+  <input type="radio" name="rendertype" value="straight" checked>Off
+  <input type="radio" name="rendertype" value="singletex">Single Tex
+  <input type="radio" name="rendertype" value="cubemap">Cubemap
+</form> 
 <input type="range" id="val1range" min="-1.5" max="0.5" value="0.0" step="0.025" name="val1">
-<input type="range" id="val2range" min="0.1" max="2.0" value="2.0" step="0.025" name="val1">
+<input type="range" id="val2range" min="0.1" max="5.0" value="2.0" step="0.025" name="val1">
 
 
 
