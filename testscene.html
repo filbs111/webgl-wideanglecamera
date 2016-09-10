@@ -590,11 +590,17 @@ function init(){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
 		switch (evt.keyCode){
-			case 38:
+			case 87:				//W
 				movePlayer(0.1);
 				break;
-			case 40:
+			case 83:				//S
 				movePlayer(-0.1);
+				break;
+			case 65:				//A
+				movePlayerLeft(0.1);
+				break;
+			case 68:				//D
+				movePlayerLeft(-0.1);
 				break;
 			case 39:
 				turnPlayer(0.02);
@@ -602,14 +608,26 @@ function init(){
 			case 37:
 				turnPlayer(-0.02);
 				break;
-			case 188:
-				rollPlayer(0.02);
+			case 81:				//Q
+				rollPlayer(0.02);	
 				break;
-			case 190:
-				rollPlayer(-0.02);
+			case 69:				//E
+				rollPlayer(-0.02);	
+				break;
+			case 32:				//spacebar
+				movePlayerUp(0.1);
+				break;
+			case 17:				//ctrl
+				movePlayerUp(-0.1);
 				break;
 			default:
 				willPreventDefault=false;
+				break;
+			case 38:
+				pitchPlayer(0.02);		//up arrow
+				break;
+			case 40:
+				pitchPlayer(-0.02);
 				break;
 		}
 		if (willPreventDefault){evt.preventDefault()};
@@ -636,6 +654,18 @@ function movePlayer(amount){
 	playerPosition[2] += amount*playerMatrix[10];
 	setPlayerTranslation(playerPosition);
 }
+function movePlayerUp(amount){	
+	playerPosition[0] += amount*playerMatrix[1];
+	playerPosition[1] += amount*playerMatrix[5];
+	playerPosition[2] += amount*playerMatrix[9];
+	setPlayerTranslation(playerPosition);
+}
+function movePlayerLeft(amount){	
+	playerPosition[0] += amount*playerMatrix[0];
+	playerPosition[1] += amount*playerMatrix[4];
+	playerPosition[2] += amount*playerMatrix[8];
+	setPlayerTranslation(playerPosition);
+}
 function turnPlayer(amount){
 	setPlayerTranslation([0,0,0]);
 
@@ -652,6 +682,16 @@ function rollPlayer(amount){
 	var rotMat=mat4.create();
 	mat4.identity(rotMat);
 	mat4.rotateZ(rotMat, amount);
+	mat4.multiply(rotMat, playerMatrix, playerMatrix);
+
+	setPlayerTranslation(playerPosition);
+}
+function pitchPlayer(amount){
+	setPlayerTranslation([0,0,0]);	
+	
+	var rotMat=mat4.create();
+	mat4.identity(rotMat);
+	mat4.rotateX(rotMat, amount);
 	mat4.multiply(rotMat, playerMatrix, playerMatrix);
 
 	setPlayerTranslation(playerPosition);
