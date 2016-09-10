@@ -562,8 +562,8 @@ function initCubemapFramebuffer()
 		
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, face, cubemapTexture, 0);
 		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);	///???? how to connect to render buffer of cubemap? does cubemap have multiple render buffers?
-		
 	}
+	gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);	//this gets rid of errors being logged to console.  
 }
 
 
