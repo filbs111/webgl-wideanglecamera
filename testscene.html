@@ -77,9 +77,10 @@
 	precision mediump float;
 	varying vec2 vTextureCoord;
 	uniform sampler2D uSampler;
+	uniform vec4 uTintColor;
 	
 	void main(void) {
-		gl_FragColor = texture2D(uSampler, vTextureCoord);
+		gl_FragColor = uTintColor*texture2D(uSampler, vTextureCoord);
 	}
 </script>
 <!-- vertex shader with tex coords -->
@@ -156,7 +157,7 @@ function initShaders(){
 					
 	shaderProgramTexmap = loadShader( "shader-texmap-vs", "shader-texmap-fs",{
 					attributes:["aVertexPosition", "aTextureCoord"],
-					uniforms:["uPMatrix","uMVMatrix","uSampler"]
+					uniforms:["uPMatrix","uMVMatrix","uSampler","uTintColor"]
 					});
 }
 
@@ -165,6 +166,7 @@ var pMatrix = mat4.create();
 var nMatrix = mat3.create();
 
 var playerMatrix = mat4.create();
+var playerCamera = mat4.create();
 
 function setMatrixUniforms(shaderProgram) {
     gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
@@ -265,6 +267,11 @@ function initBuffers(){
 	}
 }
 
+function setLevelTintColor(arr){
+	gl.useProgram(shaderProgramTexmap);
+	gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, arr);	//set tint colour
+}
+
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 	
@@ -273,24 +280,56 @@ function drawScene(frameTime){
 	
 	if (rendertype == "straight"){
 		//draw the scene straight to the screen
+		setLevelTintColor([1.0,1.0,1.0,1.0]);
+		
 		mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix);
-		drawWorldScene(frameTime);
+		drawWorldScene(frameTime, 0);
 	} else {
 		if (rendertype == "singletex"){
+		
+			setLevelTintColor([0.5,1.0,0.5,1.0]);
+		
 			//draw the scene to offscreen framebuffer
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 			gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, 0.1, 100, pMatrix);	//FOV set 
-			drawWorldScene(frameTime);
+			drawWorldScene(frameTime, 0);
 		}else{
+		
+			var tints=[
+				[1.0,0.2,0.2,1.0],	//red		right
+				[1.0,1.0,0.2,1.0],	//yellow	left
+				[0.2,1.0,0.2,1.0],	//green		up
+				[0.2,1.0,1.0,1.0],	//cyan		down
+				[0.2,0.2,1.0,1.0],	//blue		front
+				[1.0,0.2,1.0,1.0]	//purple	rear
+			];
+			var rotsY=[
+				0.5*Math.PI,-0.5*Math.PI,0,0,0,Math.PI
+			];
+			var rotsX=[
+				0,0,0.5*Math.PI,-0.5*Math.PI,0,0
+			];
+		
+		
+			mat4.perspective(90.0, 1.0, 0.1, 100, pMatrix);	//FOV set 
+		
 			//do the same thing for cube map
 			for (var ii=0;ii<6;ii++){
+				setLevelTintColor(tints[ii]);
 				var framebuffer = cubemapFramebuffer[ii];
 				gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 				gl.viewport(0, 0, framebuffer.width, framebuffer.height);
 				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-				mat4.perspective(90.0, 1.0, 0.1, 100, pMatrix);	//FOV set 
+				
+				//mat4.set(playerMatrix, playerCamera);
+				mat4.identity(playerCamera);
+				mat4.rotateY(playerCamera, rotsY[ii]);
+				mat4.rotateX(playerCamera, rotsX[ii]);
+				
+				mat4.multiply(playerCamera, playerMatrix, playerCamera);
+				
 				drawWorldScene(frameTime);
 			}
 		}
@@ -345,13 +384,12 @@ function drawScene(frameTime){
 }
 
 
-function drawWorldScene(frameTime) {
-		
+function drawWorldScene(frameTime) {		
 		//console.log("drawing...");
 	
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		setMVMatToPlayer();
+		mat4.set(playerCamera, mvMatrix)
 		mat4.rotateX(mvMatrix,Math.PI);	//turn upside down so texture looks right
 		mat4.scale(mvMatrix, [10,10,10]);
 
@@ -366,6 +404,9 @@ function drawWorldScene(frameTime) {
 		
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
 		setMatrixUniforms(shaderProgramTexmap);
+		
+		//gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, [1.0,0.5,0.5,1.0]);	//set tint colour
+		
 		
 		gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -382,7 +423,8 @@ function drawWorldScene(frameTime) {
 		gl.uniform4fv(shaderProgramColored.uniforms.uColor, [1.0, 0.0, 0.0, 1.0]);
 
 		
-		setMVMatToPlayer();
+		mat4.set(playerCamera, mvMatrix)
+		
 		mat4.translate(mvMatrix, [0.0, 0.0, -10]);
 		
 		drawSphere();
@@ -391,26 +433,21 @@ function drawWorldScene(frameTime) {
 		var angStep = Math.PI/8;
 		
 		gl.uniform4fv(shaderProgramColored.uniforms.uColor, [1.0, 1.0, 0.0, 1.0]);
-		setMVMatToPlayer();
+		mat4.set(playerCamera, mvMatrix)
+		
 		mat4.rotateZ(mvMatrix,Math.PI/2);
 		
 		drawBallRing();
 		
 		gl.uniform4fv(shaderProgramColored.uniforms.uColor, [0.0, 1.0, 0.0, 1.0]);
-		setMVMatToPlayer();
+		mat4.set(playerCamera, mvMatrix)
 		
 		drawBallRing();
 		
 		gl.uniform4fv(shaderProgramColored.uniforms.uColor, [0.0, 0.0, 1.0, 1.0]);
-		setMVMatToPlayer();
+		mat4.set(playerCamera, mvMatrix)
 		mat4.rotateY(mvMatrix,Math.PI/2);
 		drawBallRing();
-		
-		function setMVMatToPlayer(){
-			//mvMatrix= mat4.clone(playerMatrix);	//can apparently do this in a newer version of glMatrix
-			mvMatrix = mat4.create();
-			mat4.set(playerMatrix, mvMatrix);
-		}
 		
 		function drawBallRing(){
 			mat4.rotateX(mvMatrix, angStep/2);
@@ -564,6 +601,12 @@ function init(){
 			case 37:
 				turnPlayer(-0.02);
 				break;
+			case 188:
+				rollPlayer(0.02);		//note rolling/turning don't play well together currently
+				break;
+			case 190:
+				rollPlayer(-0.02);
+				break;
 		}
 	})
 
@@ -589,11 +632,13 @@ function movePlayer(amount){
 	setPlayerTranslation(playerPosition);
 }
 function turnPlayer(amount){
-	playerMatrix[12]=0;	//zero translation components
-	playerMatrix[13]=0;
-	playerMatrix[14]=0;
 	setPlayerTranslation([0,0,0]);	
 	mat4.rotateY(playerMatrix, amount);
+	setPlayerTranslation(playerPosition);
+}
+function rollPlayer(amount){
+	setPlayerTranslation([0,0,0]);	
+	mat4.rotateZ(playerMatrix, amount);
 	setPlayerTranslation(playerPosition);
 }
 
