@@ -281,8 +281,13 @@ function drawScene(frameTime){
 	if (rendertype == "straight"){
 		//draw the scene straight to the screen
 		setLevelTintColor([1.0,1.0,1.0,1.0]);
+				
+		//use same FOV as set by the current var2, and var1 value for rectilinear (0)
+		var var2 = parseFloat(document.getElementById("val2range").value);
+		var vfov = (360/Math.PI)*Math.atan2(var2 , 2.0);
+		mat4.perspective(vfov, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix); 
 		
-		mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix); 
+		
 		mat4.set(playerMatrix, playerCamera);
 		drawWorldScene(frameTime, 0);
 	} else {
@@ -380,7 +385,7 @@ function drawScene(frameTime){
 		gl.uniform1f(activeProg.uniforms.uVarTwo, var2);
 		
 		//calculate horizontal and vertical FOV displayed - use same maths that shaders do, using +/-1 as input.
-		var maxyvert = var2;  //TODO what is this really (max value passed from fullscreen vert shader)
+		var maxyvert = var2;
 		var maxxvert = var2*screenAspect;
 		var vfov = (360/Math.PI)*Math.atan2(maxyvert , 2.0 + var1*maxyvert*maxyvert);
 		document.getElementById("vfov").innerHTML= vfov.toFixed(1);
