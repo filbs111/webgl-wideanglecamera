@@ -374,9 +374,18 @@ function drawScene(frameTime){
 			//gl.bindTexture(gl.TEXTURE_2D, rttTexture);
 			gl.uniform1i(shaderProgramFullscreenTextured.uniforms.uSampler, 0);
 		}
-		gl.uniform1f(activeProg.uniforms.uVarOne, parseFloat(document.getElementById("val1range").value));
-		gl.uniform1f(activeProg.uniforms.uVarTwo, parseFloat(document.getElementById("val2range").value));
+		var var1 = parseFloat(document.getElementById("val1range").value);
+		var var2 = parseFloat(document.getElementById("val2range").value);
+		gl.uniform1f(activeProg.uniforms.uVarOne, var1);
+		gl.uniform1f(activeProg.uniforms.uVarTwo, var2);
 		
+		//calculate horizontal and vertical FOV displayed - use same maths that shaders do, using +/-1 as input.
+		var maxyvert = var2;  //TODO what is this really (max value passed from fullscreen vert shader)
+		var maxxvert = var2*screenAspect;
+		var vfov = (360/Math.PI)*Math.atan2(maxyvert , 2.0 + var1*maxyvert*maxyvert);
+		document.getElementById("vfov").innerHTML= vfov.toFixed(1);
+		var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
+		document.getElementById("hfov").innerHTML= hfov.toFixed(1);
 		
 		gl.uniform1f(activeProg.uniforms.uAspect, screenAspect);
 		if (rendertype == "cubemap"){
@@ -730,9 +739,10 @@ function setPlayerTranslation(posArray){
   <input type="radio" name="rendertype" value="singletex">Single Tex
   <input type="radio" name="rendertype" value="cubemap">Cubemap
 </form> 
-<input type="range" id="val1range" min="-1.5" max="0.5" value="0.0" step="0.025" name="val1">
+<input type="range" id="val1range" min="-0.25" max="0.05" value="0.0" step="0.025" name="val1">		<!-- -0.125 seems to result in stereographic projection -->
 <input type="range" id="val2range" min="0.1" max="10.0" value="2.0" step="0.025" name="val1">
-
+<br/>vfov:<span id="vfov"></span>
+<br/>hfov:<span id="hfov"></span>
 
 
 </body>
