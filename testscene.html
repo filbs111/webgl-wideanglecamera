@@ -275,6 +275,9 @@ function setLevelTintColor(arr){
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 	
+	var var1 = parseFloat(document.getElementById("val1range").value);
+	var var2 = parseFloat(document.getElementById("val2range").value);
+	
 	//simple render direct to screen
 	var rendertype = document.querySelector('input[name="rendertype"]:checked').value;
 	
@@ -289,6 +292,8 @@ function drawScene(frameTime){
 		
 		mat4.set(playerMatrix, playerCamera);
 		drawWorldScene(frameTime, 0);
+		
+		var1=0.0;	//override this since want to display FOV for 0 distortion in "off" case
 	} else {
 		if (rendertype == "singletex"){
 		
@@ -378,18 +383,9 @@ function drawScene(frameTime){
 			//gl.bindTexture(gl.TEXTURE_2D, rttTexture);
 			gl.uniform1i(shaderProgramFullscreenTextured.uniforms.uSampler, 0);
 		}
-		var var1 = parseFloat(document.getElementById("val1range").value);
-		var var2 = parseFloat(document.getElementById("val2range").value);
+		
 		gl.uniform1f(activeProg.uniforms.uVarOne, var1);
 		gl.uniform1f(activeProg.uniforms.uVarTwo, var2);
-		
-		//calculate horizontal and vertical FOV displayed - use same maths that shaders do, using +/-1 as input.
-		var maxyvert = var2;
-		var maxxvert = var2*screenAspect;
-		var vfov = (360/Math.PI)*Math.atan2(maxyvert , 2.0 + var1*maxyvert*maxyvert);
-		document.getElementById("vfov").innerHTML= vfov.toFixed(1);
-		var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
-		document.getElementById("hfov").innerHTML= hfov.toFixed(1);
 		
 		gl.uniform1f(activeProg.uniforms.uAspect, screenAspect);
 		if (rendertype == "cubemap"){
@@ -402,6 +398,14 @@ function drawScene(frameTime){
 		gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 		
 	}
+	
+	//calculate horizontal and vertical FOV displayed - use same maths that shaders do, using +/-1 as input.
+	var maxyvert = var2;
+	var maxxvert = var2*screenAspect;
+	var vfov = (360/Math.PI)*Math.atan2(maxyvert , 2.0 + var1*maxyvert*maxyvert);
+	document.getElementById("vfov").innerHTML= vfov.toFixed(1);
+	var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
+	document.getElementById("hfov").innerHTML= hfov.toFixed(1);
 }
 
 
