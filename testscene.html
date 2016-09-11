@@ -21,7 +21,7 @@
 	void main(void) {
 		
 		//this works . 2 lines below equivalent. unsure which more efficient. maybe compile to same
-		gl_FragColor = textureCube(uSampler, vec3(vTextureCoord.s, vTextureCoord.t, 2.0 +uVarOne*dot(vTextureCoord,vTextureCoord)));
+		gl_FragColor = textureCube(uSampler, vec3(vTextureCoord.s, -vTextureCoord.t, 2.0 +uVarOne*dot(vTextureCoord,vTextureCoord)));
 		//gl_FragColor = textureCube(uSampler, vec3(0.0,0.0,1.0)*(uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3(vTextureCoord.s , vTextureCoord.t  , 2.0));
 		
 		//gl_FragColor = vec4(vTextureCoord.s,vTextureCoord.t,0.0,1.0);
@@ -282,7 +282,7 @@ function drawScene(frameTime){
 		//draw the scene straight to the screen
 		setLevelTintColor([1.0,1.0,1.0,1.0]);
 		
-		mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix);
+		mat4.perspective(100, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix); 
 		mat4.set(playerMatrix, playerCamera);
 		drawWorldScene(frameTime, 0);
 	} else {
@@ -300,12 +300,12 @@ function drawScene(frameTime){
 		}else{
 		
 			var tints=[
-				[1.0,0.2,0.2,1.0],	//red		right
-				[1.0,1.0,0.2,1.0],	//yellow	left
-				[0.2,1.0,0.2,1.0],	//green		up
-				[0.2,1.0,1.0,1.0],	//cyan		down
-				[0.2,0.2,1.0,1.0],	//blue		front
-				[1.0,0.2,1.0,1.0]	//purple	rear
+				[1.0,0.4,0.4,1.0],	//red		right
+				[1.0,1.0,0.4,1.0],	//yellow	left
+				[0.4,1.0,0.4,1.0],	//green		up
+				[0.4,1.0,1.0,1.0],	//cyan		down
+				[0.4,0.4,1.0,1.0],	//blue		front
+				[1.0,0.4,1.0,1.0]	//purple	rear
 			];
 			var rotsY=[
 				0.5*Math.PI,-0.5*Math.PI,0,0,0,Math.PI
@@ -500,6 +500,7 @@ function initTextureFramebuffer() {
 
 	rttTexture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -621,19 +622,19 @@ function init(){
 				rollPlayer(-0.02);	
 				break;
 			case 32:				//spacebar
-				movePlayerUp(0.1);
+				movePlayerUp(-0.1);
 				break;
 			case 17:				//ctrl
-				movePlayerUp(-0.1);
+				movePlayerUp(0.1);
 				break;
 			default:
 				willPreventDefault=false;
 				break;
 			case 38:
-				pitchPlayer(0.02);		//up arrow
+				pitchPlayer(-0.02);		//up arrow
 				break;
 			case 40:
-				pitchPlayer(-0.02);
+				pitchPlayer(0.02);
 				break;
 		}
 		if (willPreventDefault){evt.preventDefault()};
