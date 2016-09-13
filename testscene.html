@@ -41,7 +41,14 @@
 	uniform float uVarOne;
 	uniform vec2 uInvF;
 	
+	
+	
 	void main(void) {
+	
+		float tan_cant_ang=0.4;
+		float sint = 0.3714;
+		float cost = 0.9284; 
+		
 		//this gives what appears to be right kind of effect.
 		//changing the 1st float zooms. (larger zooms in)
 		//changing the 2nd float adjusts the barrel effect (larger -ve for more effect)
@@ -59,7 +66,7 @@
 		//vec3 afterrotate = vec3( -2.0*toproject.z , toproject.y , 2.0*toproject.x);	// 90  deg rotation?			//seems to be centred in expected place, but too small... ?!!!
 		//vec3 afterrotate = vec3( -0.5*toproject.z , toproject.y , 2.0*toproject.x);		//this ends up looking right for 90 deg. unsure why though.
 		
-		vec3 afterrotate = vec3( 0.71*(toproject.x-0.5*toproject.z) , toproject.y , 0.71*(toproject.z+2.0*toproject.x));	//"correct" for 45 deg. unsure where the scaling factors come in...
+		vec3 afterrotate = vec3( toproject.x*cost-0.5*sint*toproject.z, toproject.y , toproject.z*cost+2.0*sint*toproject.x );	//"correct" for 45 deg. unsure where the scaling factors come in...
 		
 		//try trivial non rotation
 		//vec3 afterrotate = vec3( toproject.x , toproject.y , toproject.z);
@@ -67,7 +74,7 @@
 		//vec3 afterrotate = vec3( toproject.x-1.0 , toproject.y , toproject.z);
 		
 		//gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,0.0)*afterrotate.z +afterrotate);
-		gl_FragColor = texture2DProj(uSampler, vec3( afterrotate.x+0.5*afterrotate.z, afterrotate.y+0.5*afterrotate.z, afterrotate.z ));
+		gl_FragColor = texture2DProj(uSampler, vec3( afterrotate.x+0.2*afterrotate.z, afterrotate.y+0.5*afterrotate.z, afterrotate.z ));	//unsure where this number comes from!
 	}
 </script>
 
@@ -361,9 +368,27 @@ function drawScene(frameTime){
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			mat4.perspective(90, 1.0, 0.1, 100, pMatrix);	//FOV set 
 			
+			//45 deg
+			
 			mat4.identity(playerCamera);
 			mat4.rotateY(playerCamera, Math.PI/4);
 			mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			
+			
+			//pMatrix[8]=-2;	//shift centre of perspective by 1 texture width
+			
+			
+			mat4.identity(playerCamera);
+			var tan_cant_ang=0.4;
+			var tan_cant_ang_sq = tan_cant_ang*tan_cant_ang;
+			mat4.rotateY(playerCamera, Math.atan(tan_cant_ang));	//guess a 4 in 10 slope
+			mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			
+			//var shiftamount = (1.0-tan_cant_ang_sq)/(1.0+tan_cant_ang_sq);
+			//console.log("shiftamount : " + shiftamount);
+			//pMatrix[12]= 1 - 2.0*tan_cant_ang_sq/(1.0 + tan_cant_ang_sq);
+			
+			pMatrix[8]=1.0-tan_cant_ang;	//no idea why this works
 			
 			drawWorldScene(frameTime, 0);
 		}else{
@@ -567,9 +592,9 @@ var rttFramebuffer;
 var rttTexture;
 
 var rttView={
-	fx:4,
-	fy:2,
-	sizeX:2048,
+	fx:2,
+	fy:1,
+	sizeX:1024,
 	sizeY:1024
 };
 
