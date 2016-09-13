@@ -45,9 +45,12 @@
 	
 	void main(void) {
 	
-		float tan_cant_ang=0.4;
-		float sint = 0.3714;
-		float cost = 0.9284; 
+		//float tan_cant_ang=0.4;
+		//float sint = 0.3714;
+		//float cost = 0.9284; 
+		float tan_cant_ang=0.3;
+		float sint = 0.2873;
+		float cost = 0.9578; 
 		
 		//this gives what appears to be right kind of effect.
 		//changing the 1st float zooms. (larger zooms in)
@@ -74,7 +77,7 @@
 		//vec3 afterrotate = vec3( toproject.x-1.0 , toproject.y , toproject.z);
 		
 		//gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,0.0)*afterrotate.z +afterrotate);
-		gl_FragColor = texture2DProj(uSampler, vec3( afterrotate.x+0.2*afterrotate.z, afterrotate.y+0.5*afterrotate.z, afterrotate.z ));	//unsure where this number comes from!
+		gl_FragColor = texture2DProj(uSampler, vec3( afterrotate.x+0.15*afterrotate.z, afterrotate.y+0.5*afterrotate.z, afterrotate.z ));	//unsure where this number comes from!
 	}
 </script>
 
@@ -379,7 +382,8 @@ function drawScene(frameTime){
 			
 			
 			mat4.identity(playerCamera);
-			var tan_cant_ang=0.4;
+			//var tan_cant_ang=0.4;
+			var tan_cant_ang=0.3;
 			var tan_cant_ang_sq = tan_cant_ang*tan_cant_ang;
 			mat4.rotateY(playerCamera, Math.atan(tan_cant_ang));	//guess a 4 in 10 slope
 			mat4.multiply(playerCamera, playerMatrix, playerCamera);
