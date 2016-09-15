@@ -44,9 +44,9 @@
 	uniform vec3 uSinCosTan;
 	
 	void main(void) {
-		float sint = uSinCosTan.x;
+		float sint = uSinCosTan.x;	//+ve for right, -ve for left
 		float cost = uSinCosTan.y;
-		float tan_cant_ang = uSinCosTan.z;
+		float tan_cant_ang = uSinCosTan.z;	//+ve for rhs, -ve for lhs
 		
 		//this gives what appears to be right kind of effect.
 		//changing the 1st float zooms. (larger zooms in)
@@ -74,7 +74,8 @@
 		
 		//gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,0.0)*afterrotate.z +afterrotate);
 		//gl_FragColor = texture2DProj(uSampler, vec3( 0.5*afterrotate.x+ 0.5*tan_cant_ang*afterrotate.z, 0.5*afterrotate.y+0.5*afterrotate.z, afterrotate.z ));	//unsure where this number comes from!
-		gl_FragColor = texture2DProj(uSampler, vec3( uInvF.s*(afterrotate.x+ tan_cant_ang*afterrotate.z), uInvF.t*(afterrotate.y)+afterrotate.z, 2.0*afterrotate.z));
+		gl_FragColor = texture2DProj(uSampler, vec3( uInvF.s*(0.5*afterrotate.x+ (0.5*tan_cant_ang+1.0)*afterrotate.z), uInvF.t*(afterrotate.y)+afterrotate.z, 2.0*afterrotate.z));
+				
 	}
 </script>
 
@@ -365,7 +366,7 @@ function drawScene(frameTime){
 		
 			//draw the scene to offscreen framebuffer
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-			gl.viewport(1, 1, rttFramebuffer.width-2, rttFramebuffer.height-2);	//1 border is wrong but makes easier to see boundary TODO remove for final version
+			gl.viewport(0.5*rttFramebuffer.width, 0, 0.5*rttFramebuffer.width, rttFramebuffer.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			//mat4.perspective(90, 1.0, 0.1, 100, pMatrix);	//FOV set 
 			mat4.perspective(2.0*(180.0/Math.PI)*Math.atan(biplane.fx), 1.0, 0.1, 100, pMatrix);	//FOV set 
@@ -382,11 +383,26 @@ function drawScene(frameTime){
 
 			var tan_cant_ang=biplane.tan_cant_ang;
 			
-			var tan_cant_ang_sq = tan_cant_ang*tan_cant_ang;
 			mat4.rotateY(playerCamera, Math.atan(tan_cant_ang));
 			mat4.multiply(playerCamera, playerMatrix, playerCamera);
 			
 			pMatrix[8]=1.0-tan_cant_ang/biplane.fx;
+			
+			drawWorldScene(frameTime, 0);
+			
+			
+			//draw left hand side
+			//draw the scene to offscreen framebuffer
+			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
+			gl.viewport(0, 0, 0.5*rttFramebuffer.width, rttFramebuffer.height);
+			mat4.perspective(2.0*(180.0/Math.PI)*Math.atan(biplane.fx), 1.0, 0.1, 100, pMatrix);	//FOV set 
+	
+			mat4.identity(playerCamera);
+
+			mat4.rotateY(playerCamera, -Math.atan(tan_cant_ang));
+			mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			
+			pMatrix[8]=-1.0+tan_cant_ang/biplane.fx;
 			
 			drawWorldScene(frameTime, 0);
 		}else{
@@ -502,8 +518,6 @@ function drawScene(frameTime){
 function drawWorldScene(frameTime) {		
 		//console.log("drawing...");
 	
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
 		mat4.set(playerCamera, mvMatrix)
 		mat4.rotateX(mvMatrix,Math.PI);	//turn upside down so texture looks right
 		mat4.scale(mvMatrix, [10,10,10]);
@@ -595,7 +609,7 @@ var rttTexture;
 var rttView={
 	fx:2,
 	fy:1,
-	sizeX:1024,
+	sizeX:2048,
 	sizeY:1024
 };
 
