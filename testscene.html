@@ -41,16 +41,12 @@
 	uniform float uVarOne;
 	uniform vec2 uInvF;
 	
-	
+	uniform vec3 uSinCosTan;
 	
 	void main(void) {
-	
-		//float tan_cant_ang=0.4;
-		//float sint = 0.3714;
-		//float cost = 0.9284; 
-		float tan_cant_ang=0.3;
-		float sint = 0.2873;
-		float cost = 0.9578; 
+		float sint = uSinCosTan.x;
+		float cost = uSinCosTan.y;
+		float tan_cant_ang = uSinCosTan.z;
 		
 		//this gives what appears to be right kind of effect.
 		//changing the 1st float zooms. (larger zooms in)
@@ -64,7 +60,7 @@
 		
 		//try rotating for 45 deg plane
 		
-		vec3 toproject = vec3(0.0,0.0,1.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3( uInvF.s*vTextureCoord.s, uInvF.t*vTextureCoord.t, 0.0);
+		vec3 toproject = vec3(0.0,0.0,1.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3( vTextureCoord.s, vTextureCoord.t, 0.0);
 		//vec3 afterrotate = vec3( 0.71*(toproject.x-toproject.z) , toproject.y , 0.71*(toproject.z+toproject.x));
 		//vec3 afterrotate = vec3( -2.0*toproject.z , toproject.y , 2.0*toproject.x);	// 90  deg rotation?			//seems to be centred in expected place, but too small... ?!!!
 		//vec3 afterrotate = vec3( -0.5*toproject.z , toproject.y , 2.0*toproject.x);		//this ends up looking right for 90 deg. unsure why though.
@@ -78,7 +74,7 @@
 		
 		//gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,0.0)*afterrotate.z +afterrotate);
 		//gl_FragColor = texture2DProj(uSampler, vec3( 0.5*afterrotate.x+ 0.5*tan_cant_ang*afterrotate.z, 0.5*afterrotate.y+0.5*afterrotate.z, afterrotate.z ));	//unsure where this number comes from!
-		gl_FragColor = texture2DProj(uSampler, vec3( afterrotate.x+ tan_cant_ang*afterrotate.z, afterrotate.y+afterrotate.z, 2.0*afterrotate.z ));
+		gl_FragColor = texture2DProj(uSampler, vec3( uInvF.s*(afterrotate.x+ tan_cant_ang*afterrotate.z), uInvF.t*(afterrotate.y)+afterrotate.z, 2.0*afterrotate.z));
 	}
 </script>
 
@@ -204,7 +200,7 @@ function initShaders(){
 					});
 	shaderProgramFullscreenAngled = loadShader( "shader-fullscreen-vs", "shader-fullscreen-angled-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "uSinCosTan"]
 					});
 					
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
@@ -326,7 +322,8 @@ function initBuffers(){
 
 function setLevelTintColor(arr){
 	gl.useProgram(shaderProgramTexmap);
-	gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, arr);	//set tint colour
+	//gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, arr);	//set tint colour
+	gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, [1.0,1.0,1.0,1.0]);
 }
 
 function drawScene(frameTime){
@@ -368,10 +365,10 @@ function drawScene(frameTime){
 		
 			//draw the scene to offscreen framebuffer
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-			gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
+			gl.viewport(1, 1, rttFramebuffer.width-2, rttFramebuffer.height-2);	//1 border is wrong but makes easier to see boundary TODO remove for final version
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-			mat4.perspective(90, 1.0, 0.1, 100, pMatrix);	//FOV set 
-			//mat4.perspective(2*(180/Math.PI)*Math.atan(2.0), 1.0, 0.1, 100, pMatrix);	//FOV set 
+			//mat4.perspective(90, 1.0, 0.1, 100, pMatrix);	//FOV set 
+			mat4.perspective(2.0*(180.0/Math.PI)*Math.atan(biplane.fx), 1.0, 0.1, 100, pMatrix);	//FOV set 
 			
 			//45 deg
 			//mat4.identity(playerCamera);
@@ -381,20 +378,15 @@ function drawScene(frameTime){
 			
 			//pMatrix[8]=-2;	//shift centre of perspective by 1 texture width
 			
-			
 			mat4.identity(playerCamera);
-			//var tan_cant_ang=0.4;
-			var tan_cant_ang=0.3;
+
+			var tan_cant_ang=biplane.tan_cant_ang;
+			
 			var tan_cant_ang_sq = tan_cant_ang*tan_cant_ang;
-			mat4.rotateY(playerCamera, Math.atan(tan_cant_ang));	//guess a 4 in 10 slope
+			mat4.rotateY(playerCamera, Math.atan(tan_cant_ang));
 			mat4.multiply(playerCamera, playerMatrix, playerCamera);
 			
-			//var shiftamount = (1.0-tan_cant_ang_sq)/(1.0+tan_cant_ang_sq);
-			//console.log("shiftamount : " + shiftamount);
-			//pMatrix[12]= 1 - 2.0*tan_cant_ang_sq/(1.0 + tan_cant_ang_sq);
-			
-			pMatrix[8]=1.0-tan_cant_ang;	//no idea why this works
-			//pMatrix[8]=1.0-0.5*tan_cant_ang;	//seems about right for fx,fy=2
+			pMatrix[8]=1.0-tan_cant_ang/biplane.fx;
 			
 			drawWorldScene(frameTime, 0);
 		}else{
@@ -484,7 +476,10 @@ function drawScene(frameTime){
 		if (rendertype == "cubemap"){
 		
 		}else if (rendertype == "2plane"){
-			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0, 1.0]);
+			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/biplane.fx, 1.0/biplane.fy]);
+			
+			var ang = Math.atan(tan_cant_ang);
+			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [Math.sin(ang), Math.cos(ang), tan_cant_ang ]);
 		}else{
 			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/rttView.fx, 1.0/rttView.fy]);
 			//gl.uniform2fv(activeProg.uniforms.uInvF, [1.0, 1.0]);
@@ -604,6 +599,17 @@ var rttView={
 	sizeY:1024
 };
 
+var biplane={
+	fx:1,
+	fy:1,
+	sizeX:256,
+	sizeY:256,
+	tan_cant_ang:0.3
+	//0.45 with fx=2, can go to hfov~180 (vfov 123)
+			//0.4 with fx=2, can go to hfov~175
+			//0.3 works well for fx=1 ""			137 (87)
+}
+
 function initTextureFramebuffer() {
 	rttFramebuffer = gl.createFramebuffer();
 	gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
@@ -617,6 +623,7 @@ function initTextureFramebuffer() {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	//gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
 	//gl.generateMipmap(gl.TEXTURE_2D);
 
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -836,8 +843,8 @@ function setPlayerTranslation(posArray){
 
 
 <body onload="init()">
-<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>
-
+<!--<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>-->
+<canvas id="mycanvas" width="1920" height="1080">CANVAS TO GO HERE</canvas>
 <br/>
 <form>
   Render to texture: 
@@ -847,7 +854,7 @@ function setPlayerTranslation(posArray){
   <input type="radio" name="rendertype" value="2plane">2 Plane
 </form> 
 <input type="range" id="val1range" min="-0.25" max="0.05" value="0.0" step="0.025" name="val1">		<!-- -0.125 seems to result in stereographic projection -->
-<input type="range" id="val2range" min="0.1" max="10.0" value="2.0" step="0.025" name="val1">
+<input type="range" id="val2range" min="0.2" max="10.0" value="2.0" step="0.025" name="val1">
 <br/>vfov:<span id="vfov"></span>
 <br/>hfov:<span id="hfov"></span>
 
