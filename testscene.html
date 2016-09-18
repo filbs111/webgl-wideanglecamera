@@ -74,8 +74,10 @@
 		
 		//gl_FragColor = texture2DProj(uSampler, vec3(0.5,0.5,0.0)*afterrotate.z +afterrotate);
 		//gl_FragColor = texture2DProj(uSampler, vec3( 0.5*afterrotate.x+ 0.5*tan_cant_ang*afterrotate.z, 0.5*afterrotate.y+0.5*afterrotate.z, afterrotate.z ));	//unsure where this number comes from!
+		
+		
 		gl_FragColor = texture2DProj(uSampler, vec3( uInvF.s*(0.5*afterrotate.x+ (0.5*tan_cant_ang+1.0)*afterrotate.z), uInvF.t*(afterrotate.y)+afterrotate.z, 2.0*afterrotate.z));
-				
+					
 	}
 </script>
 
@@ -114,9 +116,12 @@
 	uniform float uAspect;
 	uniform float uVarTwo;	//note the multiplication of uVarTwo*uAspect could be skipped by passing in uVarTwo*uAspect , uVarTwo as uniforms
 	
+	uniform vec2 xMultShift;	//used when drawing left and right halfs of fullscreen plane separately (could just use different mesh, but very few verts so inexpensive)
+								//to recover old behaviour multiply by 1 and shift by zero ie vec2(1,0, 0.0)
+	
 	void main(void) {
-		gl_Position = vec4(aVertexPosition, 1.0);
-		vTextureCoord = vec2(aTextureCoord.s*uVarTwo*uAspect, aTextureCoord.t*uVarTwo);
+		gl_Position = vec4(aVertexPosition, 1.0);		
+		vTextureCoord = vec2( (aTextureCoord.s*xMultShift.x + xMultShift.y )*uVarTwo*uAspect, aTextureCoord.t*uVarTwo);
 	}
 </script>
 
@@ -193,15 +198,15 @@ var shaderProgramColored;
 function initShaders(){	
 	shaderProgramFullscreenTextured = loadShader( "shader-fullscreen-vs", "shader-fullscreen-singletex-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "xMultShift"]
 					});
 	shaderProgramFullscreenCubemap = loadShader( "shader-fullscreen-vs", "shader-fullscreen-cube-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "xMultShift"]
 					});
 	shaderProgramFullscreenAngled = loadShader( "shader-fullscreen-vs", "shader-fullscreen-angled-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "uSinCosTan"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "uSinCosTan", "xMultShift"]
 					});
 					
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
@@ -346,6 +351,8 @@ function drawScene(frameTime){
 		mat4.perspective(vfov, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix); 
 		
 		mat4.set(playerMatrix, playerCamera);
+		gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+	
 		drawWorldScene(frameTime, 0);
 		
 		var1=0.0;	//override this since want to display FOV for 0 distortion in "off" case
@@ -482,7 +489,7 @@ function drawScene(frameTime){
 		}else{
 			gl.activeTexture(gl.TEXTURE0);
 			//gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-			gl.uniform1i(shaderProgramFullscreenTextured.uniforms.uSampler, 0);
+			gl.uniform1i(activeProg.uniforms.uSampler, 0);
 		}
 		
 		gl.uniform1f(activeProg.uniforms.uVarOne, var1);
@@ -490,15 +497,23 @@ function drawScene(frameTime){
 		
 		gl.uniform1f(activeProg.uniforms.uAspect, screenAspect);
 		if (rendertype == "cubemap"){
-		
+			gl.uniform2fv(activeProg.uniforms.xMultShift, [1.0, 0.0]);
 		}else if (rendertype == "2plane"){
 			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/biplane.fx, 1.0/biplane.fy]);
+			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, -0.5]);
 			
 			var ang = Math.atan(tan_cant_ang);
+			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [-Math.sin(ang), Math.cos(ang), -tan_cant_ang ]);
+			gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight);					//LHS
+			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+			
+			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, 0.5]);					
 			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [Math.sin(ang), Math.cos(ang), tan_cant_ang ]);
+			gl.viewport(gl.viewportWidth/2, 0, gl.viewportWidth/2, gl.viewportHeight);	//RHS
 		}else{
 			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/rttView.fx, 1.0/rttView.fy]);
 			//gl.uniform2fv(activeProg.uniforms.uInvF, [1.0, 1.0]);
+			gl.uniform2fv(activeProg.uniforms.xMultShift, [1.0, 0.0]);
 		}
 		
 		gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -616,9 +631,7 @@ var rttView={
 var biplane={
 	fx:1,
 	fy:1,
-	sizeX:256,
-	sizeY:256,
-	tan_cant_ang:0.3
+	tan_cant_ang:0.4
 	//0.45 with fx=2, can go to hfov~180 (vfov 123)
 			//0.4 with fx=2, can go to hfov~175
 			//0.3 works well for fx=1 ""			137 (87)
