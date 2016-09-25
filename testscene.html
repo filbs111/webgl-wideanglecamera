@@ -809,8 +809,8 @@ function init(){
 	document.body.appendChild( stats.dom );
 	
 	var gui = new dat.GUI();
-	gui.add(guiParams, 'strength', -0.2, 1.5, 0.1);
-	gui.add(guiParams, 'zoom', 1, 20, 0.01);
+	gui.add(guiParams, 'strength', -0.2, 1.5, 0.1).listen();
+	gui.add(guiParams, 'zoom', 1, 20, 0.01).listen();
 	
 	//note the counterintuitive order or key:value here ( the key is the displayed string, the value )
 	var renderingMethodOptions = {
@@ -826,11 +826,34 @@ function init(){
 
 	//just using these for display. TODO allow modification by user dragging/typing (requires calculation of zoom, and can only approach 180 deg for zero "strength", less for -ve
 	var elem;	//http://stackoverflow.com/questions/24461964/method-for-disabling-a-button-in-dat-gui
-	elem = gui.add(guiParams, 'hFOV' ).listen();
-	elem.domElement.style.pointerEvents = "none"
-	
-	elem = gui.add(guiParams, 'vFOV' ).listen();
-	elem.domElement.style.pointerEvents = "none"
+	elem = gui.add(guiParams, 'hFOV' ).listen().onChange(function(hFOV){
+		//simplify things by forcing "strength" to some barrel distortion (0 is flat, 1 is stereographic)
+		if (guiParams.strength<0.1){guiParams.strength = 0.1};
+		hFOV = parseFloat(hFOV);
+		hFOV = Math.min(hFOV,359);
+		hFOV = Math.max(hFOV,30);
+		
+		var wantedTan = Math.tan(hFOV*Math.PI/360.0);
+		var var1 = parseFloat(guiParams.strength)*-0.125;
+		var something = Math.sqrt(1.0-8.0*wantedTan*wantedTan*var1);
+		var hackAbs = (wantedTan>0)? 1:-1;	//this is horrible and can probably be refactored into something much nicer. unimportant
+		
+		guiParams.zoom = 10.0*screenAspect/( (0.5/(wantedTan*var1))*(1.0 - hackAbs*something ));
+	});
+	elem = gui.add(guiParams, 'vFOV' ).listen().onChange(function(vFOV){
+		//simplify things by forcing "strength" to some barrel distortion (0 is flat, 1 is stereographic)
+		if (guiParams.strength<0.1){guiParams.strength = 0.1};
+		vFOV = parseFloat(vFOV);
+		vFOV = Math.min(vFOV,359);
+		vFOV = Math.max(vFOV,1);
+		
+		var wantedTan = Math.tan(vFOV*Math.PI/360.0);
+		var var1 = parseFloat(guiParams.strength)*-0.125;
+		var something = Math.sqrt(1.0-8.0*wantedTan*wantedTan*var1);
+		var hackAbs = (wantedTan>0)? 1:-1;	//this is horrible and can probably be refactored into something much nicer. unimportant
+		
+		guiParams.zoom = 10.0/( (0.5/(wantedTan*var1))*(1.0 - hackAbs*something ));
+	});
 
 	gui.add(guiParams, 'tintViews');
 	
@@ -962,7 +985,7 @@ function setPlayerTranslation(posArray){
 
 
 <body onload="init()">
-<div id="info">Sterographic projection WebGL demo. Arrow keys, WASD,QE to move. <a href="https://github.com/filbs111/webgl-wideanglecamera" target="_blank">https://github.com/filbs111/webgl-wideanglecamera</a></div>
+<div id="info">Sterographic projection WebGL demo. Arrow keys, WASD, QE, space/ctrl to move. <a href="https://github.com/filbs111/webgl-wideanglecamera" target="_blank">https://github.com/filbs111/webgl-wideanglecamera</a></div>
 		
 
 <!--<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>-->
