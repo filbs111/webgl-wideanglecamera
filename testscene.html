@@ -335,6 +335,8 @@ function setLevelTintColor(arr){
 }
 
 function drawScene(frameTime){
+	resizecanvas();
+
 	requestAnimationFrame(drawScene);
 	stats.end();
 	stats.begin();
@@ -767,7 +769,9 @@ function init(){
 	    'cubemap (6 views)': 'cubemap',
 		'biplanar (2 views)' : '2plane'} 
 	guiParams.renderingMethod = 'singletex';
-	gui.add(guiParams, 'renderingMethod', renderingMethodOptions );
+	gui.add(guiParams, 'renderingMethod', renderingMethodOptions ).listen().onFinishChange(function(){
+		this.domElement.children[0].blur();
+	});	//hack to try to prevent arrow keys changing dropdown after selected something
 	
 	//just using these for display. TODO allow modification by user dragging/typing (requires calculation of zoom, and can only approach 180 deg for zero "strength", less for -ve
 	var elem;	//http://stackoverflow.com/questions/24461964/method-for-disabling-a-button-in-dat-gui
@@ -777,6 +781,13 @@ function init(){
 	elem = gui.add(guiParams, 'vFOV' ).listen();
 	elem.domElement.style.pointerEvents = "none"
 
+	document.addEventListener("keypress",function(evt){
+		evt.preventDefault();
+	});
+	document.addEventListener("keyup",function(evt){
+		evt.preventDefault();
+	});
+	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
@@ -824,8 +835,8 @@ function init(){
 		if (willPreventDefault){evt.preventDefault()};
 	})
 
-
-	initGL(document.getElementById("mycanvas"));
+	canvas = document.getElementById("mycanvas");
+	initGL();
 	initTextureFramebuffer();
 	initShaders();
 	initTexture();
@@ -904,7 +915,7 @@ function setPlayerTranslation(posArray){
 
 
 
-<body onload="init()">
+<body onload="init()" style="overflow: hidden;margin:0; padding:0;">
 <!--<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>-->
 <canvas id="mycanvas" width="1920" height="1080">CANVAS TO GO HERE</canvas>
 

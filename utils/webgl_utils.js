@@ -1,19 +1,29 @@
 
 var gl;	//context
 var screenAspect;
+var canvas;
 
 //mostly from view-source:http://learningwebgl.com/lessons/lesson01/index.html
-function initGL(canvas){
+function initGL(){
 	try {
 		gl = canvas.getContext("webgl");
-		gl.viewportWidth = canvas.width;
-		gl.viewportHeight = canvas.height;
-		screenAspect = gl.viewportWidth/gl.viewportHeight;
+		resizecanvas();
 	} catch (e) {
 	}
 	if (!gl) {
 		alert("Could not initialise WebGL, sorry :-(");
 	}
+}
+function resizecanvas(){
+	var screenWidth = window.innerWidth;
+	var screenHeight = window.innerHeight;
+	if (canvas.width != screenWidth || canvas.height != screenHeight){
+		canvas.width = screenWidth;
+		canvas.height = screenHeight;
+		gl.viewportWidth = screenWidth;
+		gl.viewportHeight = screenHeight;	//?? need to set both these things?? 
+	}
+	screenAspect = gl.viewportWidth/gl.viewportHeight;
 }
 
 function getShader(gl, id) {
