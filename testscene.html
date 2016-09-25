@@ -7,6 +7,7 @@
 
 <title>test scene</title>
 
+<script type="text/javascript" src="lib/stats.min.js"></script>
 <script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
 
 <!-- cube mapping for FOV>180 -->
@@ -334,6 +335,8 @@ function setLevelTintColor(arr){
 
 function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
+	stats.end();
+	stats.begin();
 	
 	var var1 = parseFloat(document.getElementById("val1range").value);
 	var var2 = parseFloat(document.getElementById("val2range").value);
@@ -739,8 +742,12 @@ function initTexture() {
 	texture.image.src = "img/ash_uvgrid01.jpg";
 }
 
-
+var stats;
 function init(){
+
+	stats = new Stats();
+	stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+	document.body.appendChild( stats.dom );
 
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
