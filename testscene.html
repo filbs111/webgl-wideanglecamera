@@ -295,7 +295,7 @@ var cubeVertexTextureCoordBuffer;
 var cubeVertexIndexBuffer;
 
 function initBuffers(){
-	var sphereData = makeSphereData(8,16,1.3);
+	var sphereData = makeSphereData(61,32,1.3);
 
 	vertexPositionBuffer = gl.createBuffer();
 	bufferArrayData(vertexPositionBuffer, sphereData.vertices, 3);
@@ -331,8 +331,11 @@ function initBuffers(){
 
 function setLevelTintColor(arr){
 	gl.useProgram(shaderProgramTexmap);
-	gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, arr);	//set tint colour
-	//gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, [1.0,1.0,1.0,1.0]);
+	if (guiParams.tintViews){
+		gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, arr);	//set tint colour
+	} else {
+		gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, [1.0,1.0,1.0,1.0]);
+	}
 }
 
 function drawScene(frameTime){
@@ -772,7 +775,8 @@ var guiParams={
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
-	cubescale:1
+	cubescale:1,
+	tintViews: true
 }
 function init(){
 
@@ -795,7 +799,7 @@ function init(){
 		this.domElement.children[0].blur();
 	});	//hack to try to prevent arrow keys changing dropdown after selected something
 	gui.add(guiParams, 'cubescale', 0.2,2.0,0.1);
-	
+
 	//just using these for display. TODO allow modification by user dragging/typing (requires calculation of zoom, and can only approach 180 deg for zero "strength", less for -ve
 	var elem;	//http://stackoverflow.com/questions/24461964/method-for-disabling-a-button-in-dat-gui
 	elem = gui.add(guiParams, 'hFOV' ).listen();
@@ -804,6 +808,8 @@ function init(){
 	elem = gui.add(guiParams, 'vFOV' ).listen();
 	elem.domElement.style.pointerEvents = "none"
 
+	gui.add(guiParams, 'tintViews');
+	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
