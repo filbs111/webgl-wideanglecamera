@@ -7,6 +7,7 @@
 
 <title>test scene</title>
 
+<script type="text/javascript" src="lib/dat.gui.min.js"></script>
 <script type="text/javascript" src="lib/stats.min.js"></script>
 <script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
 
@@ -338,18 +339,16 @@ function drawScene(frameTime){
 	stats.end();
 	stats.begin();
 	
-	var var1 = parseFloat(document.getElementById("val1range").value);
-	var var2 = parseFloat(document.getElementById("val2range").value);
+	var var1 = parseFloat(guiParams.strength)*-0.125;
+	var var2 = parseFloat(10.0/guiParams.zoom);
 	
-	//simple render direct to screen
-	var rendertype = document.querySelector('input[name="rendertype"]:checked').value;
+	var rendertype = guiParams.renderingMethod;
 	
 	if (rendertype == "straight"){
 		//draw the scene straight to the screen
 		setLevelTintColor([1.0,1.0,1.0,1.0]);
 				
 		//use same FOV as set by the current var2, and var1 value for rectilinear (0)
-		var var2 = parseFloat(document.getElementById("val2range").value);
 		var vfov = (360/Math.PI)*Math.atan2(var2 , 2.0);
 		mat4.perspective(vfov, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix); 
 		
@@ -527,9 +526,10 @@ function drawScene(frameTime){
 	var maxyvert = var2;
 	var maxxvert = var2*screenAspect;
 	var vfov = (360/Math.PI)*Math.atan2(maxyvert , 2.0 + var1*maxyvert*maxyvert);
-	document.getElementById("vfov").innerHTML= vfov.toFixed(1);
+	guiParams.vFOV = vfov.toFixed(1);
+	
 	var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
-	document.getElementById("hfov").innerHTML= hfov.toFixed(1);
+	guiParams.hFOV = hfov.toFixed(1);
 }
 
 
@@ -743,11 +743,39 @@ function initTexture() {
 }
 
 var stats;
+var guiParams={
+	strength:1.0,
+	zoom:5,
+	renderingMethod:null,
+	hFOV:"",
+	vFOV:""
+}
 function init(){
 
 	stats = new Stats();
 	stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 	document.body.appendChild( stats.dom );
+	
+	var gui = new dat.GUI();
+	gui.add(guiParams, 'strength', -0.2, 1.5, 0.1);
+	gui.add(guiParams, 'zoom', 1, 10, 0.01);
+	
+	//note the counterintuitive order or key:value here ( the key is the displayed string, the value )
+	var renderingMethodOptions = {
+		'direct to screen (no reprojection)':'straight',
+		'single plane view': 'singletex',
+	    'cubemap (6 views)': 'cubemap',
+		'biplanar (2 views)' : '2plane'} 
+	guiParams.renderingMethod = 'singletex';
+	gui.add(guiParams, 'renderingMethod', renderingMethodOptions );
+	
+	//just using these for display. TODO allow modification by user dragging/typing (requires calculation of zoom, and can only approach 180 deg for zero "strength", less for -ve
+	var elem;	//http://stackoverflow.com/questions/24461964/method-for-disabling-a-button-in-dat-gui
+	elem = gui.add(guiParams, 'hFOV' ).listen();
+	elem.domElement.style.pointerEvents = "none"
+	
+	elem = gui.add(guiParams, 'vFOV' ).listen();
+	elem.domElement.style.pointerEvents = "none"
 
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
@@ -879,18 +907,6 @@ function setPlayerTranslation(posArray){
 <body onload="init()">
 <!--<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>-->
 <canvas id="mycanvas" width="1920" height="1080">CANVAS TO GO HERE</canvas>
-<br/>
-<form>
-  Render to texture: 
-  <input type="radio" name="rendertype" value="straight" checked>Off
-  <input type="radio" name="rendertype" value="singletex">Single Tex
-  <input type="radio" name="rendertype" value="cubemap">Cubemap
-  <input type="radio" name="rendertype" value="2plane">2 Plane
-</form> 
-<input type="range" id="val1range" min="-0.25" max="0.05" value="0.0" step="0.025" name="val1">		<!-- -0.125 seems to result in stereographic projection -->
-<input type="range" id="val2range" min="0.2" max="10.0" value="2.0" step="0.025" name="val1">
-<br/>vfov:<span id="vfov"></span>
-<br/>hfov:<span id="hfov"></span>
 
 
 </body>
