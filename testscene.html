@@ -7,6 +7,30 @@
 
 <title>test scene</title>
 
+<style>
+	body {
+		margin: 0px;
+		overflow: hidden;
+	}
+
+	#info {
+		position: absolute;
+		top: 0px; width: 100%;
+		padding: 20px;
+		color: white;
+		text-align: center;
+	}
+	
+	#info a:link {
+				color: white;
+	}
+		
+	#info a:visited {
+		color: white;
+	}
+</style>
+
+
 <script type="text/javascript" src="lib/dat.gui.min.js"></script>
 <script type="text/javascript" src="lib/stats.min.js"></script>
 <script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
@@ -937,7 +961,10 @@ function setPlayerTranslation(posArray){
 
 
 
-<body onload="init()" style="overflow: hidden;margin:0; padding:0;">
+<body onload="init()">
+<div id="info">Sterographic projection WebGL demo. Arrow keys, WASD,QE to move. <a href="https://github.com/filbs111/webgl-wideanglecamera" target="_blank">https://github.com/filbs111/webgl-wideanglecamera</a></div>
+		
+
 <!--<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>-->
 <canvas id="mycanvas" width="1920" height="1080">CANVAS TO GO HERE</canvas>
 
