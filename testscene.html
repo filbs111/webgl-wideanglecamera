@@ -781,13 +781,6 @@ function init(){
 	elem = gui.add(guiParams, 'vFOV' ).listen();
 	elem.domElement.style.pointerEvents = "none"
 
-	document.addEventListener("keypress",function(evt){
-		evt.preventDefault();
-	});
-	document.addEventListener("keyup",function(evt){
-		evt.preventDefault();
-	});
-	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
