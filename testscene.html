@@ -802,6 +802,13 @@ var guiParams={
 	cubescale:1,
 	tintViews: true
 }
+var mouseInfo = {
+	x:0,
+	y:0,
+	dragging: false,
+	lastPointingDir:{}
+};
+
 function init(){
 
 	stats = new Stats();
@@ -903,8 +910,49 @@ function init(){
 		}
 		if (willPreventDefault){evt.preventDefault()};
 	})
-
+	
 	canvas = document.getElementById("mycanvas");
+	
+	canvas.addEventListener("mousedown", function(evt){
+		mouseInfo.x = evt.offsetX;
+		mouseInfo.y = evt.offsetY;
+		mouseInfo.dragging = true;
+		mouseInfo.lastPointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
+	});
+	canvas.addEventListener("mouseup", function(evt){
+		mouseInfo.dragging = false;
+	});
+	canvas.addEventListener("mouseout", function(evt){
+		mouseInfo.dragging = false;
+	});
+	canvas.addEventListener("mousemove", function(evt){
+		if (mouseInfo.dragging){
+			console.log("evt offsetX = " + evt.offsetX + ", offsetY = " + evt.offsetY);
+			console.log("moved : " + evt.movementX + ", movementY = " + evt.movementY);	//this is very nearly the same as the calculated version
+			console.log("calculated moved : " + (evt.offsetX - mouseInfo.x) + ", movementY = " + (evt.offsetY - mouseInfo.y) );
+			mouseInfo.x = evt.offsetX;
+			mouseInfo.y = evt.offsetY;
+			
+			var pointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
+			console.log("pointingDir = " + pointingDir);
+			
+			//get the direction of current and previous mouse position.
+			//do a cross product to work out the angle rotated
+			//and rotate the player by this amount
+			
+			var crossProd = crossProductHomgenous(pointingDir, mouseInfo.lastPointingDir);
+			mouseInfo.lastPointingDir = pointingDir;
+			
+			//rotate player 
+			//since small angle, can get away with just doing successive euler rotations. TODO axis angle
+			console.log("will turn by" + crossProd.x + ", " + crossProd.w);
+			pitchPlayer( -crossProd.x / crossProd.w);	//guess have - here because of unplanned handedness of screen, 3d co-ord systems
+			turnPlayer( crossProd.y / crossProd.w);
+			rollPlayer( crossProd.z / crossProd.w);
+			
+		}
+	});
+	
 	initGL();
 	initTextureFramebuffer();
 	initShaders();
@@ -975,6 +1023,38 @@ function setPlayerTranslation(posArray){
 	mat4.translate(playerMatrix, posArray);
 }
 
+function getPointingDirectionFromScreenCoordinate(coords){
+	//this is calcualated elsewhere so should probably move it
+	var var1 = parseFloat(guiParams.strength)*-0.125;
+	var var2 = parseFloat(10.0/guiParams.zoom);
+	
+	var maxyvert = var2;
+	var maxxvert = var2*screenAspect;
+	
+	var xpos = maxxvert*(coords.x*2.0/gl.viewportWidth   -1.0 );
+	var ypos = maxyvert*(coords.y*2.0/gl.viewportHeight   -1.0 );
+	var radsq = xpos*xpos + ypos*ypos;
+	var zpos = 2.0 + var1*radsq;
+	
+	//normalise - use sending back homogenous co-ords because maybe a tiny amount more efficient since cross producting anyway
+	var mag= Math.sqrt(radsq + zpos*zpos);
+	
+	return {
+		x: xpos,
+		y: ypos,
+		z: zpos,
+		w: mag
+	}
+}
+
+function crossProductHomgenous(dir1, dir2){
+	var output ={};
+	output.x = dir1.y * dir2.z - dir1.z * dir2.y; 
+	output.y = dir1.z * dir2.x - dir1.x * dir2.z; 
+	output.z = dir1.x * dir2.y - dir1.y * dir2.x;
+	output.w = dir1.w * dir2.w;
+	return output;
+}
 
 </script>
 
@@ -985,7 +1065,7 @@ function setPlayerTranslation(posArray){
 
 
 <body onload="init()">
-<div id="info">Sterographic projection WebGL demo. Arrow keys, WASD, QE, space/ctrl to move. <a href="https://github.com/filbs111/webgl-wideanglecamera" target="_blank">https://github.com/filbs111/webgl-wideanglecamera</a></div>
+<div id="info">Sterographic projection WebGL demo. Arrow keys or click+drag mouse to rotate, WASD, QE, space/ctrl to translate. <a href="https://github.com/filbs111/webgl-wideanglecamera" target="_blank">https://github.com/filbs111/webgl-wideanglecamera</a></div>
 		
 
 <!--<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>-->
