@@ -439,7 +439,7 @@ function drawScene(frameTime){
 			//draw the scene to offscreen framebuffer
 			setLevelTintColor([0.5,1.0,1.0,1.0]);
 			
-			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
+			//gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 			gl.viewport(0, 0, 0.5*rttFramebuffer.width, rttFramebuffer.height);
 			mat4.perspective(2.0*(180.0/Math.PI)*Math.atan(biplane.fx), 1.0, 0.1, 100, pMatrix);	//FOV set 
 	
@@ -451,6 +451,87 @@ function drawScene(frameTime){
 			pMatrix[8]=-1.0+tan_cant_ang/biplane.fx;
 			
 			drawWorldScene(frameTime, 0);
+		}else if (rendertype == "4plane"){
+		
+			setLevelTintColor([1.0,1.0,1.0,1.0]);
+		
+			//draw the scene to offscreen framebuffer
+			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
+			
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			mat4.perspective(2*(180/Math.PI)*Math.atan(biplane.fx), 2.0 , 0.1, 100, pMatrix);	//FOV set
+			
+			//draw bottom left quadrant first.
+			gl.viewport(0, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+			
+			mat4.identity(playerCamera);
+
+			mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			
+
+			//shift centre of perspective 
+			pMatrix[8]=-1;
+			pMatrix[9]=-1;
+			
+			var yadjust=0.1;
+			var xadjust=0.1;
+			
+			//this makes some perspective transform where bottom of pic wider than top, but appears to affect depth (afaik affects output w)
+			//so guess should adjust in conjunction with things that affect z output
+			pMatrix[7] = yadjust;		//affects w output as func of y input
+			pMatrix[6] = yadjust;		//affects z output as func of y input
+			//a bit of shear appears to cure that...
+			pMatrix[4]= yadjust;
+			
+			//then do the equivalent for x (instead of y)
+			pMatrix[3] = xadjust;
+			pMatrix[2] = xadjust;
+			pMatrix[1] = xadjust;
+			
+			//and that looks about right! next trick: work out what values to use to frame just enough to cover some given
+			//stereographic projection on screen...
+			//and does z make sense
+			
+			//mat4.set(playerMatrix, playerCamera);
+			drawWorldScene(frameTime, 0);
+			
+			//draw other quadrants in similar fashion.
+			//top left
+			gl.viewport(0, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+		
+			pMatrix[9]=1;
+			pMatrix[7] = -yadjust;
+			pMatrix[6] = -yadjust;
+			pMatrix[4]=  -yadjust;
+
+			pMatrix[1] = -xadjust;
+			
+			drawWorldScene(frameTime, 0);
+			
+			//top right
+			gl.viewport(0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+		
+			pMatrix[8]=1;
+			pMatrix[3] = -xadjust;
+			pMatrix[2] = -xadjust;
+			pMatrix[1]=  xadjust;
+
+			pMatrix[4] = yadjust;
+			
+			drawWorldScene(frameTime, 0);
+			
+			//bottom right
+			gl.viewport(0.5*rttFramebuffer.width, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+		
+			pMatrix[9]=-1;
+			pMatrix[7] = yadjust;
+			pMatrix[6] = yadjust;
+			pMatrix[4] = -yadjust;
+			
+			pMatrix[1]=  -xadjust;
+		
+			drawWorldScene(frameTime, 0);
+		
 		}else{
 		
 			var tints=[
@@ -794,7 +875,7 @@ function initTexture() {
 
 var stats;
 var guiParams={
-	strength:1.0,
+	strength:0.0,
 	zoom:5,
 	renderingMethod:null,
 	hFOV:"",
@@ -824,8 +905,9 @@ function init(){
 		'direct to screen (no reprojection)':'straight',
 		'single plane view': 'singletex',
 	    'cubemap (6 views)': 'cubemap',
-		'biplanar (2 views)' : '2plane'} 
-	guiParams.renderingMethod = 'cubemap';
+		'biplanar (2 views)' : '2plane',
+		'quadplane (4 views)': '4plane'} 
+	guiParams.renderingMethod = '4plane';
 	gui.add(guiParams, 'renderingMethod', renderingMethodOptions ).listen().onFinishChange(function(){
 		this.domElement.children[0].blur();
 	});	//hack to try to prevent arrow keys changing dropdown after selected something
