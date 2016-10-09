@@ -117,15 +117,15 @@
 	uniform sampler2D uSampler;
 
 	uniform float uVarOne;
-	uniform vec2 uInvF;
+	uniform vec2 uInvFadjusted;
 	
 	uniform vec2 adjust;
 	
 	void main(void) {
 		
 		vec3 toproject = vec3(0.0,0.0,1.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3( vTextureCoord.s, vTextureCoord.t, 0.0);
-		
-		vec3 afterrotate = vec3( (adjust.x+uInvF.x)*toproject.x , (adjust.y+uInvF.y)*toproject.y, 
+												
+		vec3 afterrotate = vec3( uInvFadjusted.x*toproject.x , uInvFadjusted.y*toproject.y, 
 								toproject.z - adjust.x*toproject.x - adjust.y*toproject.y);
 
 		gl_FragColor = texture2DProj(uSampler, vec3( 0.5*afterrotate.x + afterrotate.z,
@@ -269,7 +269,7 @@ function initShaders(){
 					});
 	shaderProgramFullscreen4Plane = loadShader( "shader-fullscreen-vs", "shader-fullscreen-4plane-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "adjust", "xMultShift", "yMultShift"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvFadjusted", "adjust", "xMultShift", "yMultShift"]
 					});
 					
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
@@ -695,15 +695,29 @@ function drawScene(frameTime){
 			//maybe there is some cunning optimisation 
 			//but for now - do similar way to 2plane rendering - ie draw 4 viewports, and have probably more calculation than is necessary in the frag shader
 			
-			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/quadplane.fx, 1.0/quadplane.fy]);	//does this actually do anything?
+			gl.uniform2fv(activeProg.uniforms.uInvFadjusted, [1.0/quadplane.fx + quadplane.xadjust, 1.0/quadplane.fy + quadplane.yadjust]);		//bottom left
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, -0.5]);
 			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, -0.5]);
-			
 			gl.uniform2fv(activeProg.uniforms.adjust, [quadplane.xadjust, quadplane.yadjust ]);
-			
 			gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight/2);
+			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 			
-		
+			gl.uniform2fv(activeProg.uniforms.uInvFadjusted, [1.0/quadplane.fx + quadplane.xadjust, 1.0/quadplane.fy + quadplane.yadjust]);		//top left
+			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, 0.5]);
+			gl.uniform2fv(activeProg.uniforms.adjust, [quadplane.xadjust, -quadplane.yadjust ]);
+			gl.viewport(0, gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
+			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+			gl.uniform2fv(activeProg.uniforms.uInvFadjusted, [1.0/quadplane.fx + quadplane.xadjust, 1.0/quadplane.fy + quadplane.yadjust]);		//top right
+			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, 0.5]);
+			gl.uniform2fv(activeProg.uniforms.adjust, [-quadplane.xadjust, -quadplane.yadjust ]);
+			gl.viewport(gl.viewportWidth/2, gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
+			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+			
+			gl.uniform2fv(activeProg.uniforms.uInvFadjusted, [1.0/quadplane.fx + quadplane.xadjust, 1.0/quadplane.fy + quadplane.yadjust]);		//bottom right
+			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, -0.5]);
+			gl.uniform2fv(activeProg.uniforms.adjust, [-quadplane.xadjust, quadplane.yadjust ]);
+			gl.viewport(gl.viewportWidth/2, 0, gl.viewportWidth/2, gl.viewportHeight/2);
 		}else{
 			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/rttView.fx, 1.0/rttView.fy]);
 			//gl.uniform2fv(activeProg.uniforms.uInvF, [1.0, 1.0]);
@@ -712,7 +726,6 @@ function drawScene(frameTime){
 		}
 		
 		gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-		
 	}
 	
 	//calculate horizontal and vertical FOV displayed - use same maths that shaders do, using +/-1 as input.
@@ -943,7 +956,7 @@ function initTexture() {
 
 var stats;
 var guiParams={
-	strength:1.0,
+	strength:0.0,
 	zoom:3.68,
 	renderingMethod:null,
 	hFOV:"",
