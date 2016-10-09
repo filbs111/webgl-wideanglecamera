@@ -119,23 +119,18 @@
 	uniform float uVarOne;
 	uniform vec2 uInvF;
 	
-	uniform vec3 uSinCosTan;
+	uniform vec2 adjust;
 	
 	void main(void) {
-		float sint = uSinCosTan.x;	//+ve for right, -ve for left
-		float cost = uSinCosTan.y;
-		float tan_cant_ang = uSinCosTan.z;	//+ve for rhs, -ve for lhs
 		
 		vec3 toproject = vec3(0.0,0.0,1.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3( vTextureCoord.s, vTextureCoord.t, 0.0);
 		
-		float fudgeFactorx=1.5;
-		float fudgeFactory=2.5;
-		vec3 afterrotate = vec3( fudgeFactorx*toproject.x , fudgeFactory*toproject.y, toproject.z - fudgeFactorx*0.3333*toproject.x - fudgeFactory*0.2*toproject.y);
-		
-		gl_FragColor = texture2DProj(uSampler, vec3( uInvF.s*0.5*afterrotate.x + afterrotate.z, 
-			uInvF.t*0.5*afterrotate.y + afterrotate.z,
-			2.0*afterrotate.z));
-					
+		vec3 afterrotate = vec3( (adjust.x+uInvF.x)*toproject.x , (adjust.y+uInvF.y)*toproject.y, 
+								toproject.z - adjust.x*toproject.x - adjust.y*toproject.y);
+
+		gl_FragColor = texture2DProj(uSampler, vec3( 0.5*afterrotate.x + afterrotate.z,
+													0.5*afterrotate.y + afterrotate.z,
+													2.0*afterrotate.z));
 	}
 </script>
 
@@ -274,7 +269,7 @@ function initShaders(){
 					});
 	shaderProgramFullscreen4Plane = loadShader( "shader-fullscreen-vs", "shader-fullscreen-4plane-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "uSinCosTan", "xMultShift", "yMultShift"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "adjust", "xMultShift", "yMultShift"]
 					});
 					
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
@@ -500,7 +495,7 @@ function drawScene(frameTime){
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 			
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-			mat4.perspective(2*(180/Math.PI)*Math.atan(0.5*biplane.fx), 2.0 , 0.1, 100, pMatrix);	//FOV set
+			mat4.perspective(2*(180/Math.PI)*Math.atan(quadplane.fy), quadplane.fx/quadplane.fy , 0.1, 100, pMatrix);	//FOV set
 			
 			//draw bottom left quadrant first.
 			gl.viewport(0, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
@@ -514,9 +509,9 @@ function drawScene(frameTime){
 			pMatrix[8]=-1;
 			pMatrix[9]=-1;
 			
-			var yadjust=-0.5;
+			var yadjust=-quadplane.yadjust;
 			//var xadjust=-0.9;
-			var xadjust=-0.5;	//keep the same for now so don't need to pass multiple values thru to shader
+			var xadjust=-quadplane.xadjust;	//keep the same for now so don't need to pass multiple values thru to shader
 			
 			//this makes some perspective transform where bottom of pic wider than top, but appears to affect depth (afaik affects output w)
 			//so guess should adjust in conjunction with things that affect z output
@@ -700,13 +695,11 @@ function drawScene(frameTime){
 			//maybe there is some cunning optimisation 
 			//but for now - do similar way to 2plane rendering - ie draw 4 viewports, and have probably more calculation than is necessary in the frag shader
 			
-			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/biplane.fx, 1.0/biplane.fy]);
+			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/quadplane.fx, 1.0/quadplane.fy]);	//does this actually do anything?
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, -0.5]);
 			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, -0.5]);
 			
-			var tan_cant_ang = 0.5;
-			var ang = Math.atan(tan_cant_ang);	//??!
-			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [-Math.sin(ang), Math.cos(ang), -tan_cant_ang ]);
+			gl.uniform2fv(activeProg.uniforms.adjust, [quadplane.xadjust, quadplane.yadjust ]);
 			
 			gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight/2);
 			
@@ -838,7 +831,13 @@ var biplane={
 	//0.45 with fx=2, can go to hfov~180 (vfov 123)
 			//0.4 with fx=2, can go to hfov~175
 			//0.3 works well for fx=1 ""			137 (87)
-}
+};
+var quadplane={
+	fx:5,
+	fy:0.9,
+	xadjust:0.6,
+	yadjust:0.35
+};
 
 function initTextureFramebuffer() {
 	rttFramebuffer = gl.createFramebuffer();
@@ -944,13 +943,13 @@ function initTexture() {
 
 var stats;
 var guiParams={
-	strength:0.0,
-	zoom:5,
+	strength:1.0,
+	zoom:3.68,
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
 	cubescale:1,
-	tintViews: true
+	tintViews: false
 }
 var mouseInfo = {
 	x:0,
@@ -967,7 +966,7 @@ function init(){
 	
 	var gui = new dat.GUI();
 	gui.add(guiParams, 'strength', -0.2, 1.5, 0.1).listen();
-	gui.add(guiParams, 'zoom', 1, 20, 0.01).listen();
+	gui.add(guiParams, 'zoom', 1, 10, 0.01).listen();
 	
 	//note the counterintuitive order or key:value here ( the key is the displayed string, the value )
 	var renderingMethodOptions = {
