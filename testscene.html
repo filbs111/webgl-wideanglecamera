@@ -109,6 +109,37 @@
 </script>
 
 
+<!-- modify 2plane shader for 4plane -->
+<script id="shader-fullscreen-4plane-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	
+	varying vec2 vTextureCoord;
+	uniform sampler2D uSampler;
+
+	uniform float uVarOne;
+	uniform vec2 uInvF;
+	
+	uniform vec3 uSinCosTan;
+	
+	void main(void) {
+		float sint = uSinCosTan.x;	//+ve for right, -ve for left
+		float cost = uSinCosTan.y;
+		float tan_cant_ang = uSinCosTan.z;	//+ve for rhs, -ve for lhs
+		
+		vec3 toproject = vec3(0.0,0.0,1.0)*(2.0 + uVarOne*dot(vTextureCoord,vTextureCoord)) + vec3( vTextureCoord.s, vTextureCoord.t, 0.0);
+		
+		float fudgeFactorx=1.5;
+		float fudgeFactory=2.5;
+		vec3 afterrotate = vec3( fudgeFactorx*toproject.x , fudgeFactory*toproject.y, toproject.z - fudgeFactorx*0.3333*toproject.x - fudgeFactory*0.2*toproject.y);
+		
+		gl_FragColor = texture2DProj(uSampler, vec3( uInvF.s*0.5*afterrotate.x + afterrotate.z, 
+			uInvF.t*0.5*afterrotate.y + afterrotate.z,
+			2.0*afterrotate.z));
+					
+	}
+</script>
+
+
 <!-- simple texture mapped pix shader -->
 <script id="shader-fullscreen-singletex-fs" type="x-shader/x-fragment">
 	precision mediump float;
@@ -145,10 +176,11 @@
 	
 	uniform vec2 xMultShift;	//used when drawing left and right halfs of fullscreen plane separately (could just use different mesh, but very few verts so inexpensive)
 								//to recover old behaviour multiply by 1 and shift by zero ie vec2(1,0, 0.0)
+	uniform vec2 yMultShift;
 	
 	void main(void) {
 		gl_Position = vec4(aVertexPosition, 1.0);		
-		vTextureCoord = vec2( (aTextureCoord.s*xMultShift.x + xMultShift.y )*uVarTwo*uAspect, aTextureCoord.t*uVarTwo);
+		vTextureCoord = vec2( (aTextureCoord.s*xMultShift.x + xMultShift.y )*uVarTwo*uAspect, (aTextureCoord.t*yMultShift.x + yMultShift.y )*uVarTwo);
 	}
 </script>
 
@@ -222,18 +254,27 @@
 
 var shaderProgramTexmap;
 var shaderProgramColored;
+
+var shaderProgramFullscreenTextured,
+	shaderProgramFullscreenCubemap,
+	shaderProgramFullscreenAngled,
+	shaderProgramFullscreen4Plane;
 function initShaders(){	
 	shaderProgramFullscreenTextured = loadShader( "shader-fullscreen-vs", "shader-fullscreen-singletex-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "xMultShift"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "xMultShift", "yMultShift"]
 					});
 	shaderProgramFullscreenCubemap = loadShader( "shader-fullscreen-vs", "shader-fullscreen-cube-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "xMultShift", "uVarCubeScale"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "xMultShift", "yMultShift", "uVarCubeScale"]
 					});
 	shaderProgramFullscreenAngled = loadShader( "shader-fullscreen-vs", "shader-fullscreen-angled-fs",{
 					attributes:["aVertexPosition","aTextureCoord"],
-					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "uSinCosTan", "xMultShift"]
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "uSinCosTan", "xMultShift", "yMultShift"]
+					});
+	shaderProgramFullscreen4Plane = loadShader( "shader-fullscreen-vs", "shader-fullscreen-4plane-fs",{
+					attributes:["aVertexPosition","aTextureCoord"],
+					uniforms:["uSampler","uVarOne","uVarTwo","uAspect", "uInvF", "uSinCosTan", "xMultShift", "yMultShift"]
 					});
 					
 	shaderProgramColored = loadShader( "shader-simple-vs", "shader-simple-fs",{
@@ -459,7 +500,7 @@ function drawScene(frameTime){
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 			
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-			mat4.perspective(2*(180/Math.PI)*Math.atan(biplane.fx), 2.0 , 0.1, 100, pMatrix);	//FOV set
+			mat4.perspective(2*(180/Math.PI)*Math.atan(0.5*biplane.fx), 2.0 , 0.1, 100, pMatrix);	//FOV set
 			
 			//draw bottom left quadrant first.
 			gl.viewport(0, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
@@ -473,8 +514,9 @@ function drawScene(frameTime){
 			pMatrix[8]=-1;
 			pMatrix[9]=-1;
 			
-			var yadjust=0.1;
-			var xadjust=0.1;
+			var yadjust=-0.5;
+			//var xadjust=-0.9;
+			var xadjust=-0.5;	//keep the same for now so don't need to pass multiple values thru to shader
 			
 			//this makes some perspective transform where bottom of pic wider than top, but appears to affect depth (afaik affects output w)
 			//so guess should adjust in conjunction with things that affect z output
@@ -601,6 +643,8 @@ function drawScene(frameTime){
 			activeProg = shaderProgramFullscreenCubemap;	//doesn't exist here yet
 		} else if (rendertype == "2plane"){
 			activeProg = shaderProgramFullscreenAngled;
+		} else if (rendertype == "4plane"){
+			activeProg = shaderProgramFullscreen4Plane;
 		} else {
 			activeProg = shaderProgramFullscreenTextured;
 		}
@@ -630,23 +674,48 @@ function drawScene(frameTime){
 		gl.uniform1f(activeProg.uniforms.uAspect, screenAspect);
 		if (rendertype == "cubemap"){
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [1.0, 0.0]);
+			gl.uniform2fv(activeProg.uniforms.yMultShift, [1.0, 0.0]);
 			gl.uniform1f(activeProg.uniforms.uVarCubeScale, cubescale);
 		}else if (rendertype == "2plane"){
 			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/biplane.fx, 1.0/biplane.fy]);
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, -0.5]);
+			gl.uniform2fv(activeProg.uniforms.yMultShift, [1.0, 0.0]);
 			
 			var ang = Math.atan(tan_cant_ang);
 			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [-Math.sin(ang), Math.cos(ang), -tan_cant_ang ]);
 			gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight);					//LHS
 			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 			
-			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, 0.5]);					
+			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, 0.5]);
 			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [Math.sin(ang), Math.cos(ang), tan_cant_ang ]);
 			gl.viewport(gl.viewportWidth/2, 0, gl.viewportWidth/2, gl.viewportHeight);	//RHS
+		}else if (rendertype == "4plane"){
+			//create vertex buffer of 4 canted planes - ie 9 vertices - index buffer will not change
+			//take advantage of standard perspective texturing instead of tex2dproj (not sure if that affects speed)
+			//the vertex positions that end up on screen will be constant (4 corners, edge midpoints, middle of screen)
+			// - but don't pass these in. pass in x,y,w such that x/w, y/w result in the correct screen space co-ords
+			//and such that the nature of homogenous co-ordinates result in x,y as would be ..
+			
+			
+			//maybe there is some cunning optimisation 
+			//but for now - do similar way to 2plane rendering - ie draw 4 viewports, and have probably more calculation than is necessary in the frag shader
+			
+			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/biplane.fx, 1.0/biplane.fy]);
+			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, -0.5]);
+			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, -0.5]);
+			
+			var tan_cant_ang = 0.5;
+			var ang = Math.atan(tan_cant_ang);	//??!
+			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [-Math.sin(ang), Math.cos(ang), -tan_cant_ang ]);
+			
+			gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight/2);
+			
+		
 		}else{
 			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/rttView.fx, 1.0/rttView.fy]);
 			//gl.uniform2fv(activeProg.uniforms.uInvF, [1.0, 1.0]);
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [1.0, 0.0]);
+			gl.uniform2fv(activeProg.uniforms.yMultShift, [1.0, 0.0]);
 		}
 		
 		gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
