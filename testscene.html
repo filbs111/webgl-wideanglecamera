@@ -441,6 +441,7 @@ function drawScene(frameTime){
 			mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, 0.1, 100, pMatrix);	//FOV set 
 			mat4.set(playerMatrix, playerCamera);
 			drawWorldScene(frameTime, 0);
+			clearBorder();
 		}else if (rendertype == "2plane"){
 			setLevelTintColor([1.0,1.0,0.5,1.0]);
 		
@@ -487,9 +488,9 @@ function drawScene(frameTime){
 			pMatrix[8]=-1.0+tan_cant_ang/biplane.fx;
 			
 			drawWorldScene(frameTime, 0);
+			clearBorder();
 		}else if (rendertype == "4plane"){
 		
-			setLevelTintColor([1.0,1.0,1.0,1.0]);
 		
 			//draw the scene to offscreen framebuffer
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
@@ -499,6 +500,7 @@ function drawScene(frameTime){
 			
 			//draw bottom left quadrant first.
 			gl.viewport(0, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+			setLevelTintColor([1.0,1.0,1.0,1.0]);
 			
 			mat4.identity(playerCamera);
 
@@ -535,7 +537,8 @@ function drawScene(frameTime){
 			//draw other quadrants in similar fashion.
 			//top left
 			gl.viewport(0, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
-		
+			setLevelTintColor([0.5,0.5,0.5,1.0]);
+
 			pMatrix[9]=1;
 			pMatrix[7] = -yadjust;
 			pMatrix[6] = -yadjust;
@@ -547,7 +550,8 @@ function drawScene(frameTime){
 			
 			//top right
 			gl.viewport(0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
-		
+			setLevelTintColor([1.0,1.0,1.0,1.0]);
+
 			pMatrix[8]=1;
 			pMatrix[3] = -xadjust;
 			pMatrix[2] = -xadjust;
@@ -559,7 +563,8 @@ function drawScene(frameTime){
 			
 			//bottom right
 			gl.viewport(0.5*rttFramebuffer.width, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
-		
+			setLevelTintColor([0.5,0.5,0.5,1.0]);
+			
 			pMatrix[9]=-1;
 			pMatrix[7] = yadjust;
 			pMatrix[6] = yadjust;
@@ -569,6 +574,7 @@ function drawScene(frameTime){
 		
 			drawWorldScene(frameTime, 0);
 		
+			clearBorder();
 		}else{
 		
 			var tints=[
@@ -736,6 +742,24 @@ function drawScene(frameTime){
 	
 	var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
 	guiParams.hFOV = hfov.toFixed(1);
+	
+	
+	function clearBorder(){
+		//draw a border so clearer where extent of correct reprojection is.
+		//if wanted to do this more efficiently, would just change viewport when rendering views
+		//but this is only intended as a testing tool - for performance testing, should disable
+		if (!guiParams.clearBorders){return;}
+		gl.enable(gl.SCISSOR_TEST);
+		gl.scissor(0, 0, 1, rttFramebuffer.height);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.scissor(0, 0, rttFramebuffer.width, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.scissor(rttFramebuffer.width-1, 0, 1, rttFramebuffer.height);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.scissor(0, rttFramebuffer.height-1, rttFramebuffer.width, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.disable(gl.SCISSOR_TEST);
+	}
 }
 
 
@@ -956,13 +980,14 @@ function initTexture() {
 
 var stats;
 var guiParams={
-	strength:0.0,
+	strength:1.0,
 	zoom:3.68,
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
 	cubescale:1,
-	tintViews: false
+	tintViews: false,
+	clearBorders: true
 }
 var mouseInfo = {
 	x:0,
@@ -1026,6 +1051,7 @@ function init(){
 	});
 
 	gui.add(guiParams, 'tintViews');
+	gui.add(guiParams, 'clearBorders');
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
