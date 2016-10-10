@@ -408,6 +408,9 @@ function drawScene(frameTime){
 	var var1 = parseFloat(guiParams.strength)*-0.125;
 	var var2 = parseFloat(10.0/guiParams.zoom);
 	
+	recalculateViewParams();	//shouldn't be doing this every frame...
+	
+	
 	var rendertype = guiParams.renderingMethod;
 	
 	
@@ -869,11 +872,12 @@ var biplane={
 			//0.4 with fx=2, can go to hfov~175
 			//0.3 works well for fx=1 ""			137 (87)
 };
+
 var quadplane={
-	fx:5,
-	fy:0.9,
-	xadjust:0.6,
-	yadjust:0.35
+	fx:1,
+	fy:0.5,
+	xadjust:0.37,
+	yadjust:0.22
 };
 
 function initTextureFramebuffer() {
@@ -988,7 +992,7 @@ var guiParams={
 	cubescale:1,
 	tintViews: false,
 	clearBorders: true
-}
+};
 var mouseInfo = {
 	x:0,
 	y:0,
@@ -1013,7 +1017,7 @@ function init(){
 	    'cubemap (6 views)': 'cubemap',
 		'biplanar (2 views)' : '2plane',
 		'quadplane (4 views)': '4plane'} 
-	guiParams.renderingMethod = '4plane';
+	guiParams.renderingMethod = 'singletex';
 	gui.add(guiParams, 'renderingMethod', renderingMethodOptions ).listen().onFinishChange(function(){
 		this.domElement.children[0].blur();
 	});	//hack to try to prevent arrow keys changing dropdown after selected something
@@ -1049,7 +1053,7 @@ function init(){
 		
 		guiParams.zoom = 10.0/( (0.5/(wantedTan*var1))*(1.0 - hackAbs*something ));
 	});
-
+	
 	gui.add(guiParams, 'tintViews');
 	gui.add(guiParams, 'clearBorders');
 	
@@ -1243,6 +1247,39 @@ function crossProductHomgenous(dir1, dir2){
 	output.z = dir1.x * dir2.y - dir1.y * dir2.x;
 	output.w = dir1.w * dir2.w;
 	return output;
+}
+
+function recalculateViewParams(){
+
+	//calculate variables that determine the viewports for single plane, 2plane, 4plane such that just enough area is covered
+	//for single plane this is simplest - look at the direction shown at the corners of the screen, and set viewport with that in its corners
+
+	//fit - set fx, fy to hFOV, vFOV - should appear to touch in middle of each screen edge
+	/*
+	var capFOV = 175.0;
+	rttView.fx = Math.tan(Math.min(guiParams.hFOV, capFOV)*Math.PI/360.0);
+	rttView.fy = Math.tan(Math.min(guiParams.vFOV, capFOV)*Math.PI/360.0);
+	*/
+	
+	//mostly copy paste from elsewhere:
+	var var1 = parseFloat(guiParams.strength)*-0.125;
+	var var2 = parseFloat(10.0/guiParams.zoom);
+	
+	var2*= 0.8;	//some variable that will modify by UI, to allow showing the curved limits (for real use, should set this to 1.0/remove from code)
+	
+	var maxyvert = var2;
+	var maxxvert = var2*screenAspect;
+	
+	//this reproduces result of above "fit" method (bar capping).
+	//rttView.fx = maxxvert / (2.0 + var1*maxxvert*maxxvert);
+	//rttView.fy = maxyvert / (2.0 + var1*maxyvert*maxyvert);
+	
+	//fill
+	var mag = 2.0 + var1*(maxxvert*maxxvert + maxyvert*maxyvert);
+	mag = Math.max(0.2, mag); 	//cap
+	rttView.fx = maxxvert / mag;
+	rttView.fy = maxyvert / mag;
+	
 }
 
 </script>
