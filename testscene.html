@@ -866,7 +866,7 @@ var rttView={
 var biplane={
 	fx:2.5,
 	fy:2.5,
-	tan_cant_ang:0.55
+	tan_cant_ang:0.55	//setting all of these variables dynamically now to suit screen zoom, aspect now, so irrelevant
 };
 
 var quadplane={
@@ -981,13 +981,14 @@ function initTexture() {
 var stats;
 var guiParams={
 	strength:1.0,
-	zoom:3.68,
+	zoom:5.0,
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
 	cubescale:1,
 	tintViews: false,
-	clearBorders: true
+	clearBorders: true,
+	indentViews: false
 };
 var mouseInfo = {
 	x:0,
@@ -1052,6 +1053,7 @@ function init(){
 	
 	gui.add(guiParams, 'tintViews');
 	gui.add(guiParams, 'clearBorders');
+	gui.add(guiParams, 'indentViews');
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
@@ -1261,7 +1263,9 @@ function recalculateViewParams(){
 	var var1 = parseFloat(guiParams.strength)*-0.125;
 	var var2 = parseFloat(10.0/guiParams.zoom);
 	
-	var2*= 0.8;	//some variable that will modify by UI, to allow showing the curved limits (for real use, should set this to 1.0/remove from code)
+	if (guiParams.indentViews){
+		var2*= 0.9;	//some variable that will modify by UI, to allow showing the curved limits (for real use, should set this to 1.0/remove from code)
+	}
 	
 	var maxyvert = var2;
 	var maxxvert = var2*screenAspect;
@@ -1272,10 +1276,28 @@ function recalculateViewParams(){
 	
 	//fill
 	var mag = 2.0 + var1*(maxxvert*maxxvert + maxyvert*maxyvert);
-	mag = Math.max(0.2, mag); 	//cap
-	rttView.fx = maxxvert / mag;
-	rttView.fy = maxyvert / mag;
+	var cappedmag = Math.max(0.1, mag);
+	rttView.fx = maxxvert / cappedmag;
+	rttView.fy = maxyvert / cappedmag;
+
+	mag = Math.max(-8, mag);	//cap - things will screw up when vfov exceeds 180 though - where happens depends on screen aspect. pull some number out of air for now.
+
+	//the same for 2plane.
+	biplane.tan_cant_ang = -var1*maxxvert;	// (3) override tAng from satisfying simultaenous equations (1),(2)	
+	//make fy such that centre top/bottom is in the right place
+	var tAng = biplane.tan_cant_ang;
+	var cAng = Math.cos(Math.atan(tAng));
+	var sAng = Math.sin(Math.atan(tAng));
+	biplane.fy = maxyvert / ( cAng*(2.0 + var1*maxyvert*maxyvert));		// (1)
+	var zpos = 2.0 + var1*maxxvert*maxxvert;
+	//biplane.fx = 0.5 / ( cAng*cAng*(tAng + 1.0/(maxxvert / zpos )));	//set such that right/left are fixed (halfway up screen)
 	
+	//set the x position of the corners - only works (to get x position on screen correct) if setting the y position too.
+	var d=maxxvert / mag;
+	biplane.fx =  0.5 /( cAng*cAng* (tAng + 1.0/d));
+	//set fy such that corner points are in the right place (note this overrides previous setting of fy so centre top/bottom point is no longer set)
+	//biplane.fy = (maxyvert/mag) / ( cAng *(1.0 + d*tAng) ); // (2)  - commented out since unnecessary now setting biplane.tan_cant_ang  - see (3)
+
 }
 
 </script>
