@@ -873,7 +873,7 @@ var quadplane={
 	fx:5,
 	fy:0.9,
 	xadjust:0.6,
-	yadjust:0.35
+	yadjust:0.35	//setting all of these variables dynamically now to suit screen zoom, aspect now, so irrelevant
 };
 
 function initTextureFramebuffer() {
@@ -981,7 +981,7 @@ function initTexture() {
 var stats;
 var guiParams={
 	strength:1.0,
-	zoom:5.0,
+	zoom:4.5,
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
@@ -1011,10 +1011,10 @@ function init(){
 	var renderingMethodOptions = {
 		'direct to screen (no reprojection)':'straight',
 		'single plane view': 'singletex',
-	    'cubemap (6 views)': 'cubemap',
 		'biplanar (2 views)' : '2plane',
-		'quadplane (4 views)': '4plane'} 
-	guiParams.renderingMethod = '2plane';
+		'quadplane (4 views)': '4plane',
+		'cubemap (6 views)': 'cubemap'} 
+	guiParams.renderingMethod = '4plane';
 	gui.add(guiParams, 'renderingMethod', renderingMethodOptions ).listen().onFinishChange(function(){
 		this.domElement.children[0].blur();
 	});	//hack to try to prevent arrow keys changing dropdown after selected something
@@ -1298,7 +1298,25 @@ function recalculateViewParams(){
 	//set fy such that corner points are in the right place (note this overrides previous setting of fy so centre top/bottom point is no longer set)
 	//biplane.fy = (maxyvert/mag) / ( cAng *(1.0 + d*tAng) ); // (2)  - commented out since unnecessary now setting biplane.tan_cant_ang  - see (3)
 
+	
+	//same for quadplane.
+	var zalpha = 2.0 + var1*(maxxvert*maxxvert + maxyvert*maxyvert);	//basically "mag"
+	var zc = 2.0 + var1*(maxyvert*maxyvert);	//at the top/bottom of screen
+	var zk = 2.0 + var1*(maxxvert*maxxvert);	//left/right. 
+		//the above could be optimised...
+	
+	quadplane.xadjust = (zalpha -zc)/maxxvert;
+	quadplane.yadjust = (zalpha -zk)/maxyvert;
+	
+	quadplane.fx= 1.0/( ( 2.0*zk/maxxvert ) - quadplane.xadjust );
+	quadplane.fy= 1.0/( ( 2.0*zc/maxyvert ) - quadplane.yadjust );
+	
+	//fudge? missed a sign somewhere?
+	quadplane.xadjust/=-1;
+	quadplane.yadjust/=-1;
+	
 }
+
 
 </script>
 
