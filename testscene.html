@@ -499,8 +499,12 @@ function drawScene(frameTime){
 	
 	var rendertype = guiParams.renderingMethod;
 	
+	var cubescale=1.0;
+	if (guiParams.autoCubemapScale){
+		cubescale = 5.0*(1024/1080)/guiParams.zoom;	//override cubescale - set it such that centre pixels are a constant density. 
+	}									//5.0/ makes full height. other numbers here since currently using 1024x1024 cubemap faces, and aiming for 1080 high screen
+										//TODO use actual screen dimensions
 	
-	var cubescale =guiParams.cubescale;
 	var invcscale = 1.0/cubescale;
 	
 	
@@ -1097,7 +1101,7 @@ var guiParams={
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
-	cubescale:1,
+	autoCubemapScale:true,
 	tintViews: false,
 	clearBorders: true,
 	indentViews: false,
@@ -1131,8 +1135,8 @@ function init(){
 	gui.add(guiParams, 'renderingMethod', renderingMethodOptions ).listen().onFinishChange(function(){
 		this.domElement.children[0].blur();
 	});	//hack to try to prevent arrow keys changing dropdown after selected something
-	gui.add(guiParams, 'cubescale', 0.2,2.0,0.1);
-
+	gui.add(guiParams, 'autoCubemapScale');
+	
 	//just using these for display. TODO allow modification by user dragging/typing (requires calculation of zoom, and can only approach 180 deg for zero "strength", less for -ve
 	var elem;	//http://stackoverflow.com/questions/24461964/method-for-disabling-a-button-in-dat-gui
 	elem = gui.add(guiParams, 'hFOV' ).listen().onChange(function(hFOV){
