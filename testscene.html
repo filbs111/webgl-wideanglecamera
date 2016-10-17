@@ -235,28 +235,14 @@
 	varying vec2 vTextureCoord;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
+	uniform float uStrength;
 	
 	void main(void) {
 	
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
 		
-		/*
-		position_intermediate.z*=(position_intermediate.z*position_intermediate.z + 0.18*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y))/(position_intermediate.z*position_intermediate.z);
-		*/
-
-		/*
-		//this works, but only up to 180 deg FOV - actually fails for polys that cross over 180
-		position_intermediate.z*= 0.5 + 0.5*sqrt(1.0 + (position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y)/(position_intermediate.z*position_intermediate.z) );
-		*/
-		
-		/*
-		float scaleFactor = 0.5 + 0.5*sqrt(1.0 + (position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y)/(position_intermediate.z*position_intermediate.z) );
-		
-		position_intermediate.z*=scaleFactor;
-		*/
-		
 		//guess want z that goes something like absolute distance (won't be correct, but...)
-		float mag = sqrt( position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y + position_intermediate.z*position_intermediate.z );
+		float mag = sqrt( uStrength*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y) + position_intermediate.z*position_intermediate.z );
 		
 		position_intermediate.xyz/=mag;
 		float anotherscalefactor = (1.0 - position_intermediate.z );
@@ -271,11 +257,6 @@
 													//mapping but screwy texture
 													//TODO use projective texturing to get best of both worlds?
 		
-		//this borks texture mapping
-		/*
-		position_intermediate.xy/= 0.5 + 0.5*sqrt(1.0 + (position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y)/(position_intermediate.z*position_intermediate.z) );
-		*/
-		
 		gl_Position = uPMatrix * position_intermediate;
 		vTextureCoord = aTextureCoord;
 	}
@@ -285,20 +266,13 @@
 	attribute vec3 aVertexPosition;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
+	uniform float uStrength;
 				
 	void main(void) {
 	
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
-		/*
-		position_intermediate.z*=(position_intermediate.z*position_intermediate.z + 0.18*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y))/(position_intermediate.z*position_intermediate.z);
-		*/
 		
-		//this works, but only up to 180 deg FOV
-		/*
-		position_intermediate.z*= 0.5 + 0.5*sqrt(1.0 + (position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y)/(position_intermediate.z*position_intermediate.z) );
-		*/
-		
-		float mag = sqrt( position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y + position_intermediate.z*position_intermediate.z );
+		float mag = sqrt( uStrength*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y) + position_intermediate.z*position_intermediate.z );
 		position_intermediate.xyz/=mag;
 		float anotherscalefactor = (1.0 - position_intermediate.z );
 		position_intermediate.xy/= anotherscalefactor;
@@ -373,12 +347,12 @@ function initShaders(){
 					
 	shaderProgramColoredDistort = loadShader( "shader-simple-vs-distort", "shader-simple-fs",{
 					attributes:["aVertexPosition"],
-					uniforms:["uPMatrix","uMVMatrix","uColor"]
+					uniforms:["uPMatrix","uMVMatrix","uColor","uStrength"]
 					});
 					
 	shaderProgramTexmapDistort = loadShader( "shader-texmap-vs-distort", "shader-texmap-fs",{
 					attributes:["aVertexPosition", "aTextureCoord"],
-					uniforms:["uPMatrix","uMVMatrix","uSampler","uTintColor"]
+					uniforms:["uPMatrix","uMVMatrix","uSampler","uTintColor","uStrength"]
 					});
 }
 
@@ -533,7 +507,7 @@ function drawScene(frameTime){
 	if (rendertype == "straight"){
 		//draw the scene straight to the screen
 		setLevelTintColor([1.0,1.0,1.0,1.0]);
-				
+		
 		//use same FOV as set by the current var2, and var1 value for rectilinear (0)
 		var vfov = (360/Math.PI)*Math.atan2(var2 , 2.0);
 		mat4.perspective(vfov, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix); 
@@ -892,12 +866,19 @@ function drawWorldScene(frameTime) {
 			activeProg=shaderProgramTexmap;
 		};
 		gl.useProgram(activeProg);
+		
+		if (guiParams.renderingMethod == 'straight'){
+			gl.uniform1f(shaderProgramTexmapDistort.uniforms.uStrength, parseFloat(guiParams.strength));
+		}
+		
+		
+		
 		gl.enableVertexAttribArray(1);
 		
 		gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
-		gl.vertexAttribPointer(shaderProgramTexmap.attributes.aVertexPosition, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(activeProg.attributes.aVertexPosition, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 		gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
-		gl.vertexAttribPointer(shaderProgramTexmap.attributes.aTextureCoord, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(activeProg.attributes.aTextureCoord, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 		
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
 		setMatrixUniforms(activeProg);
@@ -907,7 +888,7 @@ function drawWorldScene(frameTime) {
 		
 		gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(shaderProgramTexmap.uniforms.uSampler, 0);
+        gl.uniform1i(activeProg.uniforms.uSampler, 0);
 		
 		gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
@@ -919,6 +900,11 @@ function drawWorldScene(frameTime) {
 			activeProg=shaderProgramColored;
 		};
 		gl.useProgram(activeProg);
+		
+		if (guiParams.renderingMethod == 'straight'){
+			gl.uniform1f(shaderProgramColoredDistort.uniforms.uStrength, parseFloat(guiParams.strength));
+		}
+		
 		gl.disableVertexAttribArray(1);	//need to do this since was enabled somewhere when introduced a shader than uses this (texture mapping shader) 					
 										//see http://stackoverflow.com/questions/9705771/conflict-when-using-two-or-more-shaders-with-different-number-of-attributes?rq=1
 
@@ -1107,7 +1093,7 @@ function initTexture() {
 var stats;
 var guiParams={
 	strength:1.0,
-	zoom:4.0,
+	zoom:2.5,
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
