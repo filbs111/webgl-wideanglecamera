@@ -1100,7 +1100,8 @@ var guiParams={
 	cubescale:1,
 	tintViews: false,
 	clearBorders: true,
-	indentViews: false
+	indentViews: false,
+	keepInsideBox: true
 };
 var mouseInfo = {
 	x:0,
@@ -1167,6 +1168,9 @@ function init(){
 	gui.add(guiParams, 'clearBorders');
 	gui.add(guiParams, 'indentViews');
 	
+	var movementFolder = gui.addFolder('movement');
+	movementFolder.add(guiParams, 'keepInsideBox');
+	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
@@ -1210,6 +1214,9 @@ function init(){
 			case 40:
 				pitchPlayer(0.02);
 				break;
+		}
+		if (guiParams.keepInsideBox){
+			constrainPlayerPositionToBox();
 		}
 		if (willPreventDefault){evt.preventDefault()};
 	})
@@ -1288,6 +1295,14 @@ function movePlayerLeft(amount){
 	playerPosition[0] += amount*playerMatrix[0];
 	playerPosition[1] += amount*playerMatrix[4];
 	playerPosition[2] += amount*playerMatrix[8];
+	setPlayerTranslation(playerPosition);
+}
+function constrainPlayerPositionToBox(){
+	var boxSize =9.0;	//not able to go right up to the wall (full box size is 10)
+	for (var ii=0;ii<3;ii++){
+		if (playerPosition[ii]>boxSize){playerPosition[ii]=boxSize;}
+		if (playerPosition[ii]<-boxSize){playerPosition[ii]=-boxSize;}
+	}
 	setPlayerTranslation(playerPosition);
 }
 function turnPlayer(amount){
