@@ -835,6 +835,8 @@ function drawScene(frameTime){
 	var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
 	guiParams.hFOV = hfov.toFixed(1);
 	
+	console.log("hfov calculation - maxxvert = " + maxxvert + "var1 = " + var1 + ", screenAspect = " + screenAspect );
+	
 	
 	function clearBorder(){
 		//draw a border so clearer where extent of correct reprojection is.
@@ -1464,7 +1466,7 @@ function recalculateViewParams(){
 		
 
 <!--<canvas id="mycanvas" width="1366" height="768">CANVAS TO GO HERE</canvas>-->
-<canvas id="mycanvas" width="1920" height="1080">CANVAS TO GO HERE</canvas>
+<canvas id="mycanvas" width="0" height="0">CANVAS TO GO HERE</canvas>
 
 
 </body>
