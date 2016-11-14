@@ -1098,6 +1098,8 @@ function initTexture() {
 }
 
 var stats;
+var gui;
+var pointerLocked=false;
 var guiParams={
 	strength:1.0,
 	zoom:2.5,
@@ -1108,7 +1110,11 @@ var guiParams={
 	tintViews: false,
 	clearBorders: true,
 	indentViews: false,
-	keepInsideBox: true
+	keepInsideBox: true,
+	lockPointer:function(){
+		canvas.requestPointerLock();
+		gui.close();
+		}
 };
 var mouseInfo = {
 	x:0,
@@ -1123,7 +1129,7 @@ function init(){
 	stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 	document.body.appendChild( stats.dom );
 	
-	var gui = new dat.GUI();
+	gui = new dat.GUI();
 	gui.add(guiParams, 'strength', -0.2, 1.5, 0.1).listen();
 	gui.add(guiParams, 'zoom', 1, 10, 0.01).listen();
 	
@@ -1177,6 +1183,7 @@ function init(){
 	
 	var movementFolder = gui.addFolder('movement');
 	movementFolder.add(guiParams, 'keepInsideBox');
+	movementFolder.add(guiParams, 'lockPointer');
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
@@ -1229,6 +1236,22 @@ function init(){
 	})
 	
 	canvas = document.getElementById("mycanvas");
+	canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+	
+	document.addEventListener('pointerlockchange', lockChangeAlert, false);
+	document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+
+	function lockChangeAlert() {
+	  if (document.pointerLockElement === canvas ||
+		  document.mozPointerLockElement === canvas) {
+			console.log('The pointer lock status is now locked');
+			pointerLocked=true;
+		} else {
+			console.log('The pointer lock status is now unlocked');  
+			pointerLocked=false;
+	  }
+	}
+	
 	
 	canvas.addEventListener("mousedown", function(evt){
 		mouseInfo.x = evt.offsetX;
@@ -1267,6 +1290,11 @@ function init(){
 			turnPlayer( crossProd.y / crossProd.w);
 			rollPlayer( crossProd.z / crossProd.w);
 			
+		}
+		
+		if (pointerLocked){
+			pitchPlayer( 0.001* evt.movementY );	//TODO screen resolution dependent sensitivity.
+			turnPlayer( 0.001* evt.movementX );
 		}
 	});
 	
