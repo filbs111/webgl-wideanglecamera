@@ -30,10 +30,10 @@
 	}
 </style>
 
-
 <script type="text/javascript" src="lib/dat.gui.min.js"></script>
 <script type="text/javascript" src="lib/stats.min.js"></script>
-<script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="lib/multitouchsolver.js""></script>
 
 <!-- cube mapping for FOV>180 -->
 <script id="shader-fullscreen-cube-fs" type="x-shader/x-fragment">
@@ -835,7 +835,7 @@ function drawScene(frameTime){
 	var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
 	guiParams.hFOV = hfov.toFixed(1);
 	
-	console.log("hfov calculation - maxxvert = " + maxxvert + "var1 = " + var1 + ", screenAspect = " + screenAspect );
+	//console.log("hfov calculation - maxxvert = " + maxxvert + "var1 = " + var1 + ", screenAspect = " + screenAspect );
 	
 	
 	function clearBorder(){
@@ -1268,6 +1268,10 @@ function init(){
 			
 		}
 	});
+	
+	canvas.addEventListener("touchstart", handleTouchStart, false);
+	canvas.addEventListener("touchend", handleTouchEnd, false);
+	canvas.addEventListener("touchmove", handleTouchMove, false);
 	
 	initGL();
 	initTextureFramebuffer();

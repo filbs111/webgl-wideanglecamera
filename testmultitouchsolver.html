@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
+<title>multitouch method test</title>
+
+<script type="text/javascript" src="lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="lib/multitouchsolver.js"></script>
+
+<script type="text/javascript">
+//just a console application to test method to best guess rotation given a set of pairs of directions
+
+function testRotationMethod(){
+	//input sets of co-ordinates and check that the output is as expected.
+	//can do this by: create some rotation matrix, create a random set of direction vectors, rotate the vectors, see if get the same matrix outline
+	//try the same with some randomness.
+	
+	getRotationFromDirectionPairs([
+		[[1,1,1],[1,1,2]],
+		[[2,3,4],[6,-1,2]]
+		]);
+
+	console.log("trying a rotation about y - ~1 in 10 gradient (times 2)");
+		getRotationFromDirectionPairs([
+		[[0.1,0,1],[-0.1,0,1]]
+		]);
+	
+	console.log("trying a rotation about x - ~1 in 10 gradient");
+		getRotationFromDirectionPairs([
+		[[0,0.1,1],[0,-0.1,1]]
+		]);
+	
+	console.log();
+	
+	/*
+	console.log("trying a 90 deg rotation about x - this fails");
+		getRotationFromDirectionPairs([
+		[[0,1,1],[0,-1,1]]
+		]);
+	*/
+	
+	console.log("about x but slightly about z");
+		getRotationFromDirectionPairs([
+		[[0.01,0.1,1],[0.01,-0.1,1]]
+		]);
+	
+	console.log();
+
+	
+	
+	console.log("a pinch- should be no rotation");
+		getRotationFromDirectionPairs([
+		[[0,0.2,1],[0,0.1,1]],
+		[[0,-0.2,1],[0,-0.1,1]]
+		]);
+	
+	console.log();
+	
+	
+	console.log("trying a twist about z - ~1 in 10 gradient");
+		getRotationFromDirectionPairs([
+		[[0.1,0.01,1],[0.1,-0.01,1]],
+		[[-0.1,-0.01,1],[-0.1,0.01,1]]
+		]);
+	console.log("about z - ~1 in 10 gradient");
+		getRotationFromDirectionPairs([
+		[[0.1,1,0],[-0.1,1,0]],
+		//[[-0.1,1,0],[-0.1,1,0]]
+		]);
+		
+	console.log("about z doubled - ~1 in 10 gradient");
+		getRotationFromDirectionPairs([
+		[[0.1,1,0],[-0.1,1,0]],
+		[[0.1,1,0],[-0.1,1,0]]
+		]);
+
+	console.log("about z 2 parallel - ~1 in 10 gradient");
+		getRotationFromDirectionPairs([
+		[[0.1,1,-0.1],[-0.1,1,-0.1]],
+		[[0.1,1,0.1],[-0.1,1,0.1]]
+		]);
+		
+}
+
+function init(){
+	testRotationMethod();
+}
+
+
+</script>
+
+</head>
+
+
+
+<body onload="init()">
+
+
+
+</body>
+
+
+</html>
