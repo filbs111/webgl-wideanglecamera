@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
 <html>
 
 <head>
@@ -1361,8 +1362,8 @@ function getPointingDirectionFromScreenCoordinate(coords){
 	var maxyvert = var2;
 	var maxxvert = var2*screenAspect;
 	
-	var xpos = maxxvert*(coords.x*2.0/gl.viewportWidth   -1.0 );
-	var ypos = maxyvert*(coords.y*2.0/gl.viewportHeight   -1.0 );
+	var xpos = maxxvert*(coords.x*2.0/canvas.mystylewidth   -1.0 );
+	var ypos = maxyvert*(coords.y*2.0/canvas.mystyleheight   -1.0 );
 	var radsq = xpos*xpos + ypos*ypos;
 	var zpos = 2.0 + var1*radsq;
 	
@@ -1456,6 +1457,17 @@ function recalculateViewParams(){
 	
 }
 
+function goFullscreen(elem){
+	if (elem.requestFullscreen) {
+	i.requestFullscreen();
+	} else if (elem.webkitRequestFullscreen) {
+		elem.webkitRequestFullscreen();
+	} else if (elem.mozRequestFullScreen) {
+		elem.mozRequestFullScreen();
+	} else if (elem.msRequestFullscreen) {
+		elem.msRequestFullscreen();
+	}
+}
 
 </script>
 

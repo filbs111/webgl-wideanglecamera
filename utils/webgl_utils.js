@@ -17,12 +17,30 @@ function initGL(){
 function resizecanvas(){
 	var screenWidth = window.innerWidth;
 	var screenHeight = window.innerHeight;
-	if (canvas.width != screenWidth || canvas.height != screenHeight){
-		canvas.width = screenWidth;
-		canvas.height = screenHeight;
-		gl.viewportWidth = screenWidth;
-		gl.viewportHeight = screenHeight;	//?? need to set both these things?? 
+	var scaledWidth = screenWidth;
+	var scaledHeight = screenHeight;
+
+	var pixelScale = window.devicePixelRatio || 1;
+	
+	//console.log("device pixel ratio = " + window.devicePixelRatio);
+	scaledWidth*=pixelScale;
+	scaledHeight*=pixelScale;
+	
+	if (gl.viewportWidth != scaledWidth ||gl.viewportHeight != scaledHeight){
+		
+		gl.viewportWidth = scaledWidth;
+		gl.viewportHeight = scaledHeight;
+		
+		canvas.width = scaledWidth;
+		canvas.height = scaledHeight;
+		
+		canvas.mystylewidth = screenWidth;	//extra vars to keep actual numbers rather than strings
+		canvas.mystyleheight = screenHeight;
+		
+		canvas.style.width = ''+screenWidth+'px';	//the only things called pixels are the only thing that aren't pixels (these are 640x360 for screen that is twice these dimensions.)
+		canvas.style.height = ''+screenHeight+'px';
 	}
+	
 	screenAspect = gl.viewportWidth/gl.viewportHeight;
 }
 
