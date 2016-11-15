@@ -1190,10 +1190,10 @@ function init(){
 		var willPreventDefault=true;
 		switch (evt.keyCode){
 			case 87:				//W
-				movePlayer(0.1);
+				movePlayerFwd(0.1);
 				break;
 			case 83:				//S
-				movePlayer(-0.1);
+				movePlayerFwd(-0.1);
 				break;
 			case 65:				//A
 				movePlayerLeft(0.1);
@@ -1229,9 +1229,7 @@ function init(){
 				pitchPlayer(0.02);
 				break;
 		}
-		if (guiParams.keepInsideBox){
-			constrainPlayerPositionToBox();
-		}
+		constrainPlayerPositionToBox();
 		if (willPreventDefault){evt.preventDefault()};
 	})
 	
@@ -1312,7 +1310,7 @@ function init(){
 }
 
 var playerPosition = [0,0,0];
-function movePlayer(amount){	
+function movePlayerFwd(amount){	
 	playerPosition[0] += amount*playerMatrix[2];
 	playerPosition[1] += amount*playerMatrix[6];
 	playerPosition[2] += amount*playerMatrix[10];
@@ -1330,7 +1328,15 @@ function movePlayerLeft(amount){
 	playerPosition[2] += amount*playerMatrix[8];
 	setPlayerTranslation(playerPosition);
 }
+function movePlayer(vec){	//[left,up,forward]
+	playerPosition[0] += vec[0]*playerMatrix[0] + vec[1]*playerMatrix[1] + vec[2]*playerMatrix[2];
+	playerPosition[1] += vec[0]*playerMatrix[4] + vec[1]*playerMatrix[5] + vec[2]*playerMatrix[6];
+	playerPosition[2] += vec[0]*playerMatrix[8] + vec[1]*playerMatrix[9] + vec[2]*playerMatrix[10];
+	setPlayerTranslation(playerPosition);
+	constrainPlayerPositionToBox();
+}
 function constrainPlayerPositionToBox(){
+	if (!guiParams.keepInsideBox){return;}
 	var boxSize =9.0;	//not able to go right up to the wall (full box size is 10)
 	for (var ii=0;ii<3;ii++){
 		if (playerPosition[ii]>boxSize){playerPosition[ii]=boxSize;}
