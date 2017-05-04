@@ -243,10 +243,9 @@
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
 		
 		//guess want z that goes something like absolute distance (won't be correct, but...)
-		float mag = sqrt( uStrength*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y) + position_intermediate.z*position_intermediate.z );
-		
-		float anotherscalefactortimesmag = (mag - position_intermediate.z );
-		position_intermediate.z=-0.5*anotherscalefactortimesmag;
+		vec2 tempvec = position_intermediate.xy/position_intermediate.z;
+		float maga =  sqrt(uStrength*dot(tempvec,tempvec) + 1.0);
+		position_intermediate.z*=0.5*(1.0 - sign(position_intermediate.z)*maga);
 		
 		gl_Position = uPMatrix * position_intermediate;
 		vTextureCoord = aTextureCoord;
@@ -262,10 +261,14 @@
 	void main(void) {
 	
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
-		
+		/*
 		float mag = sqrt( uStrength*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y) + position_intermediate.z*position_intermediate.z );
 		float anotherscalefactortimesmag = (mag - position_intermediate.z );
 		position_intermediate.z=-0.5*anotherscalefactortimesmag;
+		*/
+		vec2 tempvec = position_intermediate.xy/position_intermediate.z;
+		float maga =  sqrt(uStrength*dot(tempvec,tempvec) + 1.0);
+		position_intermediate.z*=0.5*(1.0 - sign(position_intermediate.z)*maga);
 		
 		gl_Position = uPMatrix * position_intermediate;
 	}
