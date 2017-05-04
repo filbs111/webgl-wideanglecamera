@@ -245,18 +245,8 @@
 		//guess want z that goes something like absolute distance (won't be correct, but...)
 		float mag = sqrt( uStrength*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y) + position_intermediate.z*position_intermediate.z );
 		
-		position_intermediate.xyz/=mag;
-		float anotherscalefactor = (1.0 - position_intermediate.z );
-		
-		position_intermediate.xy/= anotherscalefactor;
-		position_intermediate.z=-0.5;
-		
-		position_intermediate.xyz*=mag;
-		
-		position_intermediate.xyz*=anotherscalefactor;	//this just affects how screwy texture mapping is
-													//and whether z values go mental - leave it out for seems correct tex
-													//mapping but screwy texture
-													//TODO use projective texturing to get best of both worlds?
+		float anotherscalefactortimesmag = (mag - position_intermediate.z );
+		position_intermediate.z=-0.5*anotherscalefactortimesmag;
 		
 		gl_Position = uPMatrix * position_intermediate;
 		vTextureCoord = aTextureCoord;
@@ -274,12 +264,8 @@
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
 		
 		float mag = sqrt( uStrength*(position_intermediate.x*position_intermediate.x + position_intermediate.y*position_intermediate.y) + position_intermediate.z*position_intermediate.z );
-		position_intermediate.xyz/=mag;
-		float anotherscalefactor = (1.0 - position_intermediate.z );
-		position_intermediate.xy/= anotherscalefactor;
-		position_intermediate.z=-0.5;
-		position_intermediate.xyz*=mag;
-		position_intermediate.xyz*=anotherscalefactor;
+		float anotherscalefactortimesmag = (mag - position_intermediate.z );
+		position_intermediate.z=-0.5*anotherscalefactortimesmag;
 		
 		gl_Position = uPMatrix * position_intermediate;
 	}
