@@ -924,7 +924,8 @@ function drawWorldScene(frameTime) {
 		
 		mat4.translate(mvMatrix, [0.0, 0.0, -10]);
 		
-		drawSphere();
+		setupSphereDrawing();
+		drawSphereInstance();
 		
 		
 		var angStep = Math.PI/8;
@@ -951,25 +952,29 @@ function drawWorldScene(frameTime) {
 			for (var ii=0;ii<16;ii++){
 				mat4.rotateX(mvMatrix, angStep);
 				mat4.translate(mvMatrix, [0.0, 0.0, -10]);
-				drawSphere();
+				drawSphereInstance();
 				mat4.translate(mvMatrix, [0.0, 0.0, 10]);
 			}
 		}
 
 }
 
-function drawSphere(){
+function setupSphereDrawing(){
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
 	
 	var activeProgram = (guiParams.renderingMethod == 'straight') ? shaderProgramColoredDistort:shaderProgramColored;
 	
     gl.vertexAttribPointer(activeProgram.attributes.aVertexPosition, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
-		
-    setMatrixUniforms(activeProgram);
-				
-    gl.drawElements(gl.TRIANGLES, vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+	
+	gl.uniformMatrix4fv(activeProgram.uniforms.uPMatrix, false, pMatrix);
+}
+
+function drawSphereInstance(){
+	var activeProgram = (guiParams.renderingMethod == 'straight') ? shaderProgramColoredDistort:shaderProgramColored;
+	
+    gl.uniformMatrix4fv(activeProgram.uniforms.uMVMatrix, false, mvMatrix);
+	gl.drawElements(gl.TRIANGLES, vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
 
 
