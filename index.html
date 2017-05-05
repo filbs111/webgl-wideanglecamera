@@ -892,52 +892,55 @@ function drawWorldScene(frameTime) {
 
 		}
 
-		//draw spheres
-		if (guiParams.renderingMethod == 'straight'){
-			activeProg=shaderProgramColoredDistort;
-		}else{
-			activeProg=shaderProgramColored;
-		};
-		gl.useProgram(activeProg);
-		
-		if (guiParams.renderingMethod == 'straight'){
-			var str = parseFloat(guiParams.strength);
-			gl.uniform3fv(shaderProgramColoredDistort.uniforms.uStrengthVec, [str,str,1]);
+		if (guiParams.drawBalls){
+			//draw spheres
+			if (guiParams.renderingMethod == 'straight'){
+				activeProg=shaderProgramColoredDistort;
+			}else{
+				activeProg=shaderProgramColored;
+			};
+			gl.useProgram(activeProg);
+			
+			if (guiParams.renderingMethod == 'straight'){
+				var str = parseFloat(guiParams.strength);
+				gl.uniform3fv(shaderProgramColoredDistort.uniforms.uStrengthVec, [str,str,1]);
+			}
+			
+			gl.disableVertexAttribArray(1);	//need to do this since was enabled somewhere when introduced a shader than uses this (texture mapping shader) 					
+											//see http://stackoverflow.com/questions/9705771/conflict-when-using-two-or-more-shaders-with-different-number-of-attributes?rq=1
+
+			gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 0.0, 0.0, 1.0]);
+
+			
+			mat4.set(playerCamera, mvMatrix)
+			
+			mat4.translate(mvMatrix, [0.0, 0.0, -10]);
+			
+			setupSphereDrawing();
+			drawSphereInstance();
+			
+			
+			var angStep = Math.PI/8;
+			
+			gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 0.0, 1.0]);
+			mat4.set(playerCamera, mvMatrix)
+			
+			mat4.rotateZ(mvMatrix,Math.PI/2);
+			
+			drawBallRing();
+			
+			gl.uniform4fv(activeProg.uniforms.uColor, [0.0, 1.0, 0.0, 1.0]);
+			mat4.set(playerCamera, mvMatrix)
+			
+			drawBallRing();
+			
+			gl.uniform4fv(activeProg.uniforms.uColor, [0.0, 0.0, 1.0, 1.0]);
+			mat4.set(playerCamera, mvMatrix)
+			mat4.rotateY(mvMatrix,Math.PI/2);
+			drawBallRing();
+			
 		}
-		
-		gl.disableVertexAttribArray(1);	//need to do this since was enabled somewhere when introduced a shader than uses this (texture mapping shader) 					
-										//see http://stackoverflow.com/questions/9705771/conflict-when-using-two-or-more-shaders-with-different-number-of-attributes?rq=1
 
-		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 0.0, 0.0, 1.0]);
-
-		
-		mat4.set(playerCamera, mvMatrix)
-		
-		mat4.translate(mvMatrix, [0.0, 0.0, -10]);
-		
-		setupSphereDrawing();
-		drawSphereInstance();
-		
-		
-		var angStep = Math.PI/8;
-		
-		gl.uniform4fv(activeProg.uniforms.uColor, [1.0, 1.0, 0.0, 1.0]);
-		mat4.set(playerCamera, mvMatrix)
-		
-		mat4.rotateZ(mvMatrix,Math.PI/2);
-		
-		drawBallRing();
-		
-		gl.uniform4fv(activeProg.uniforms.uColor, [0.0, 1.0, 0.0, 1.0]);
-		mat4.set(playerCamera, mvMatrix)
-		
-		drawBallRing();
-		
-		gl.uniform4fv(activeProg.uniforms.uColor, [0.0, 0.0, 1.0, 1.0]);
-		mat4.set(playerCamera, mvMatrix)
-		mat4.rotateY(mvMatrix,Math.PI/2);
-		drawBallRing();
-		
 		function drawBallRing(){
 			mat4.rotateX(mvMatrix, angStep/2);
 			for (var ii=0;ii<16;ii++){
@@ -1110,6 +1113,7 @@ var guiParams={
 	clearBorders: true,
 	indentViews: false,
 	drawBox: true,
+	drawBalls: true,
 	keepInsideBox: true,
 	lockPointer:function(){
 		canvas.requestPointerLock();
@@ -1182,6 +1186,7 @@ function init(){
 	gui.add(guiParams, 'clearBorders');
 	gui.add(guiParams, 'indentViews');
 	gui.add(guiParams, 'drawBox');
+	gui.add(guiParams, 'drawBalls');
 
 	var movementFolder = gui.addFolder('movement');
 	movementFolder.add(guiParams, 'keepInsideBox');
