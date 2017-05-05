@@ -475,7 +475,7 @@ function setLevelTintColor(arr){
 }
 
 function drawScene(frameTime){
-	resizecanvas();
+	if (guiParams.resizeCanvas){resizecanvas();}
 
 	requestAnimationFrame(drawScene);
 	stats.end();
@@ -484,7 +484,7 @@ function drawScene(frameTime){
 	var var1 = parseFloat(guiParams.strength)*-0.125;
 	var var2 = parseFloat(10.0/guiParams.zoom);
 	
-	recalculateViewParams();	//shouldn't be doing this every frame...
+	if (guiParams.recalcParams){recalculateViewParams();}	//shouldn't be doing this every frame...
 	
 	
 	var rendertype = guiParams.renderingMethod;
@@ -1114,6 +1114,8 @@ var guiParams={
 	indentViews: false,
 	drawBox: true,
 	drawBalls: true,
+	resizeCanvas: true,
+	recalcParams: true,
 	keepInsideBox: true,
 	lockPointer:function(){
 		canvas.requestPointerLock();
@@ -1187,6 +1189,8 @@ function init(){
 	gui.add(guiParams, 'indentViews');
 	gui.add(guiParams, 'drawBox');
 	gui.add(guiParams, 'drawBalls');
+	gui.add(guiParams, 'resizeCanvas');
+	gui.add(guiParams, 'recalcParams');
 
 	var movementFolder = gui.addFolder('movement');
 	movementFolder.add(guiParams, 'keepInsideBox');
