@@ -243,10 +243,9 @@
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
 		
 		//guess want z that goes something like absolute distance (won't be correct, but...)
-		vec3 scaledPosn = uStrengthVec*position_intermediate.xyz;
-		float mag = length( scaledPosn );
-		float anotherscalefactortimesmag = (mag - position_intermediate.z );
-		position_intermediate.z=-0.5*anotherscalefactortimesmag;
+		vec3 squaredPosn = position_intermediate.xyz*position_intermediate.xyz;
+		float mag = sqrt( dot(uStrengthVec,squaredPosn) );
+		position_intermediate.z= 0.5*(position_intermediate.z - mag);
 		
 		gl_Position = uPMatrix * position_intermediate;
 		vTextureCoord = aTextureCoord;
@@ -267,10 +266,9 @@
 		float anotherscalefactortimesmag = (mag - position_intermediate.z );
 		position_intermediate.z=-0.5*anotherscalefactortimesmag;
 		*/
-		vec3 scaledPosn = uStrengthVec*position_intermediate.xyz;
-		float mag = length( scaledPosn );
-		float anotherscalefactortimesmag = (mag - position_intermediate.z );
-		position_intermediate.z=-0.5*anotherscalefactortimesmag;
+		vec3 squaredPosn = position_intermediate.xyz*position_intermediate.xyz;
+		float mag = sqrt( dot(uStrengthVec,squaredPosn) );
+		position_intermediate.z= 0.5*(position_intermediate.z - mag);
 		
 		gl_Position = uPMatrix * position_intermediate;
 	}
@@ -868,7 +866,6 @@ function drawWorldScene(frameTime) {
 			
 			if (guiParams.renderingMethod == 'straight'){
 				var str = parseFloat(guiParams.strength);
-				var str=Math.sqrt(str);	//assume always +ve strength ()
 				gl.uniform3fv(shaderProgramTexmapDistort.uniforms.uStrengthVec, [str,str,1]);
 			}
 			
@@ -905,7 +902,6 @@ function drawWorldScene(frameTime) {
 		
 		if (guiParams.renderingMethod == 'straight'){
 			var str = parseFloat(guiParams.strength);
-			var str=Math.sqrt(str);	//assume always +ve strength ()
 			gl.uniform3fv(shaderProgramColoredDistort.uniforms.uStrengthVec, [str,str,1]);
 		}
 		
