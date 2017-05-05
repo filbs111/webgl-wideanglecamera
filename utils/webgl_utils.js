@@ -21,6 +21,7 @@ function resizecanvas(){
 	var scaledHeight = screenHeight;
 
 	var pixelScale = window.devicePixelRatio || 1;
+	pixelScale/=guiParams.pixSizeMultiplier;
 	
 	//console.log("device pixel ratio = " + window.devicePixelRatio);
 	scaledWidth*=pixelScale;

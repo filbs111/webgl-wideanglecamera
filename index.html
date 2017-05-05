@@ -1099,6 +1099,7 @@ var stats;
 var gui;
 var pointerLocked=false;
 var guiParams={
+	pixSizeMultiplier:1.0,
 	strength:1.0,
 	zoom:2.5,
 	renderingMethod:null,
@@ -1129,6 +1130,7 @@ function init(){
 	document.body.appendChild( stats.dom );
 	
 	gui = new dat.GUI();
+	gui.add(guiParams, 'pixSizeMultiplier', 0.25, 4.0, 0.25).listen();
 	gui.add(guiParams, 'strength', -0.2, 1.5, 0.1).listen();
 	gui.add(guiParams, 'zoom', 1, 10, 0.01).listen();
 	
