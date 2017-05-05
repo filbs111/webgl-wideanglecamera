@@ -236,16 +236,17 @@
 	varying vec2 vTextureCoord;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
-	uniform float uStrength;
-	
+	uniform vec3 uStrengthVec;
+
 	void main(void) {
 	
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
 		
 		//guess want z that goes something like absolute distance (won't be correct, but...)
-		vec2 tempvec = position_intermediate.xy/position_intermediate.z;
-		float maga =  sqrt(uStrength*dot(tempvec,tempvec) + 1.0);
-		position_intermediate.z*=0.5*(1.0 - sign(position_intermediate.z)*maga);
+		vec3 scaledPosn = uStrengthVec*position_intermediate.xyz;
+		float mag = length( scaledPosn );
+		float anotherscalefactortimesmag = (mag - position_intermediate.z );
+		position_intermediate.z=-0.5*anotherscalefactortimesmag;
 		
 		gl_Position = uPMatrix * position_intermediate;
 		vTextureCoord = aTextureCoord;
@@ -256,8 +257,8 @@
 	attribute vec3 aVertexPosition;
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
-	uniform float uStrength;
-				
+	uniform vec3 uStrengthVec;
+			
 	void main(void) {
 	
 		vec4 position_intermediate = uMVMatrix * vec4(aVertexPosition, 1.0);
@@ -266,9 +267,10 @@
 		float anotherscalefactortimesmag = (mag - position_intermediate.z );
 		position_intermediate.z=-0.5*anotherscalefactortimesmag;
 		*/
-		vec2 tempvec = position_intermediate.xy/position_intermediate.z;
-		float maga =  sqrt(uStrength*dot(tempvec,tempvec) + 1.0);
-		position_intermediate.z*=0.5*(1.0 - sign(position_intermediate.z)*maga);
+		vec3 scaledPosn = uStrengthVec*position_intermediate.xyz;
+		float mag = length( scaledPosn );
+		float anotherscalefactortimesmag = (mag - position_intermediate.z );
+		position_intermediate.z=-0.5*anotherscalefactortimesmag;
 		
 		gl_Position = uPMatrix * position_intermediate;
 	}
@@ -337,12 +339,12 @@ function initShaders(){
 					
 	shaderProgramColoredDistort = loadShader( "shader-simple-vs-distort", "shader-simple-fs",{
 					attributes:["aVertexPosition"],
-					uniforms:["uPMatrix","uMVMatrix","uColor","uStrength"]
+					uniforms:["uPMatrix","uMVMatrix","uColor","uStrengthVec"]
 					});
 					
 	shaderProgramTexmapDistort = loadShader( "shader-texmap-vs-distort", "shader-texmap-fs",{
 					attributes:["aVertexPosition", "aTextureCoord"],
-					uniforms:["uPMatrix","uMVMatrix","uSampler","uTintColor","uStrength"]
+					uniforms:["uPMatrix","uMVMatrix","uSampler","uTintColor","uStrengthVec"]
 					});
 }
 
@@ -865,7 +867,9 @@ function drawWorldScene(frameTime) {
 			gl.useProgram(activeProg);
 			
 			if (guiParams.renderingMethod == 'straight'){
-				gl.uniform1f(shaderProgramTexmapDistort.uniforms.uStrength, parseFloat(guiParams.strength));
+				var str = parseFloat(guiParams.strength);
+				var str=Math.sqrt(str);	//assume always +ve strength ()
+				gl.uniform3fv(shaderProgramTexmapDistort.uniforms.uStrengthVec, [str,str,1]);
 			}
 			
 			
@@ -900,7 +904,9 @@ function drawWorldScene(frameTime) {
 		gl.useProgram(activeProg);
 		
 		if (guiParams.renderingMethod == 'straight'){
-			gl.uniform1f(shaderProgramColoredDistort.uniforms.uStrength, parseFloat(guiParams.strength));
+			var str = parseFloat(guiParams.strength);
+			var str=Math.sqrt(str);	//assume always +ve strength ()
+			gl.uniform3fv(shaderProgramColoredDistort.uniforms.uStrengthVec, [str,str,1]);
 		}
 		
 		gl.disableVertexAttribArray(1);	//need to do this since was enabled somewhere when introduced a shader than uses this (texture mapping shader) 					
