@@ -476,6 +476,23 @@ function setLevelTintColor(arr){
 	};
 }
 
+//possibly calling glviewport slows things down.
+var setGlViewportIfNecessary = (function(){
+	var savedx=-1;
+	var savedy=-1;
+	var saveda=-1;
+	var savedb=-1;
+	return function(a,b,x,y){
+		if (x!=savedx || y!=savedy || a!=saveda || b!=savedb){
+			gl.viewport(a, b, x, y);
+			saveda=a;
+			savedb=b;
+			savedx=x;
+			savedy=y;
+		}
+	}
+})();
+
 function drawScene(frameTime){
 	if (guiParams.resizeCanvas){resizecanvas();}
 
@@ -508,7 +525,7 @@ function drawScene(frameTime){
 		mat4.perspective(vfov, gl.viewportWidth/ gl.viewportHeight, 0.1, 100, pMatrix); 
 		
 		mat4.set(playerMatrix, playerCamera);
-		gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+		setGlViewportIfNecessary(0, 0, gl.viewportWidth, gl.viewportHeight);
 	
 		drawWorldScene(frameTime, 0);
 		
@@ -519,7 +536,7 @@ function drawScene(frameTime){
 		
 			//draw the scene to offscreen framebuffer
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-			gl.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
+			setGlViewportIfNecessary(0, 0, rttFramebuffer.width, rttFramebuffer.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, 0.1, 100, pMatrix);	//FOV set 
 			mat4.set(playerMatrix, playerCamera);
@@ -530,7 +547,7 @@ function drawScene(frameTime){
 		
 			//draw the scene to offscreen framebuffer
 			gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-			gl.viewport(0.5*rttFramebuffer.width, 0, 0.5*rttFramebuffer.width, rttFramebuffer.height);
+			setGlViewportIfNecessary(0.5*rttFramebuffer.width, 0, 0.5*rttFramebuffer.width, rttFramebuffer.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			//mat4.perspective(90, 1.0, 0.1, 100, pMatrix);	//FOV set 
 			mat4.perspective(2.0*(180.0/Math.PI)*Math.atan(biplane.fy), biplane.fx/biplane.fy, 0.1, 100, pMatrix);	//FOV set 
@@ -560,7 +577,7 @@ function drawScene(frameTime){
 			setLevelTintColor([0.5,1.0,1.0,1.0]);
 			
 			//gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-			gl.viewport(0, 0, 0.5*rttFramebuffer.width, rttFramebuffer.height);
+			setGlViewportIfNecessary(0, 0, 0.5*rttFramebuffer.width, rttFramebuffer.height);
 			mat4.perspective(2.0*(180.0/Math.PI)*Math.atan(biplane.fy), biplane.fx/biplane.fy, 0.1, 100, pMatrix);	//FOV set 
 	
 			mat4.identity(playerCamera);
@@ -582,7 +599,7 @@ function drawScene(frameTime){
 			mat4.perspective(2*(180/Math.PI)*Math.atan(quadplane.fy), quadplane.fx/quadplane.fy , 0.1, 100, pMatrix);	//FOV set
 			
 			//draw bottom left quadrant first.
-			gl.viewport(0, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+			setGlViewportIfNecessary(0, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
 			setLevelTintColor([1.0,1.0,1.0,1.0]);
 			
 			mat4.identity(playerCamera);
@@ -619,7 +636,7 @@ function drawScene(frameTime){
 			
 			//draw other quadrants in similar fashion.
 			//top left
-			gl.viewport(0, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+			setGlViewportIfNecessary(0, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
 			setLevelTintColor([0.5,0.5,0.5,1.0]);
 
 			pMatrix[9]=1;
@@ -632,7 +649,7 @@ function drawScene(frameTime){
 			drawWorldScene(frameTime, 0);
 			
 			//top right
-			gl.viewport(0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+			setGlViewportIfNecessary(0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
 			setLevelTintColor([1.0,1.0,1.0,1.0]);
 
 			pMatrix[8]=1;
@@ -645,7 +662,7 @@ function drawScene(frameTime){
 			drawWorldScene(frameTime, 0);
 			
 			//bottom right
-			gl.viewport(0.5*rttFramebuffer.width, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
+			setGlViewportIfNecessary(0.5*rttFramebuffer.width, 0, 0.5*rttFramebuffer.width, 0.5*rttFramebuffer.height);
 			setLevelTintColor([0.5,0.5,0.5,1.0]);
 			
 			pMatrix[9]=-1;
@@ -695,7 +712,7 @@ function drawScene(frameTime){
 				setLevelTintColor(tints[ii]);
 				var framebuffer = cubemapFramebuffer[ii];
 				gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-				gl.viewport(0, 0, framebuffer.width, framebuffer.height);
+				setGlViewportIfNecessary(0, 0, framebuffer.width, framebuffer.height);
 				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 				
 				//mat4.set(playerMatrix, playerCamera);
@@ -710,7 +727,7 @@ function drawScene(frameTime){
 		
 		//setup for drawing to screen
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-		gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+		setGlViewportIfNecessary(0, 0, gl.viewportWidth, gl.viewportHeight);
 		
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		
@@ -767,12 +784,12 @@ function drawScene(frameTime){
 			
 			var ang = Math.atan(tan_cant_ang);
 			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [-Math.sin(ang), Math.cos(ang), -tan_cant_ang ]);
-			gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight);					//LHS
+			setGlViewportIfNecessary(0, 0, gl.viewportWidth/2, gl.viewportHeight);					//LHS
 			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 			
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, 0.5]);
 			gl.uniform3fv(activeProg.uniforms.uSinCosTan, [Math.sin(ang), Math.cos(ang), tan_cant_ang ]);
-			gl.viewport(gl.viewportWidth/2, 0, gl.viewportWidth/2, gl.viewportHeight);	//RHS
+			setGlViewportIfNecessary(gl.viewportWidth/2, 0, gl.viewportWidth/2, gl.viewportHeight);	//RHS
 		}else if (rendertype == "4plane"){
 			//create vertex buffer of 4 canted planes - ie 9 vertices - index buffer will not change
 			//take advantage of standard perspective texturing instead of tex2dproj (not sure if that affects speed)
@@ -788,25 +805,25 @@ function drawScene(frameTime){
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, -0.5]);
 			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, -0.5]);
 			gl.uniform2fv(activeProg.uniforms.adjust, [quadplane.xadjust, quadplane.yadjust ]);
-			gl.viewport(0, 0, gl.viewportWidth/2, gl.viewportHeight/2);
+			setGlViewportIfNecessary(0, 0, gl.viewportWidth/2, gl.viewportHeight/2);
 			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 			
 			gl.uniform2fv(activeProg.uniforms.uInvFadjusted, [1.0/quadplane.fx + quadplane.xadjust, 1.0/quadplane.fy + quadplane.yadjust]);		//top left
 			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, 0.5]);
 			gl.uniform2fv(activeProg.uniforms.adjust, [quadplane.xadjust, -quadplane.yadjust ]);
-			gl.viewport(0, gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
+			setGlViewportIfNecessary(0, gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
 			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 
 			gl.uniform2fv(activeProg.uniforms.uInvFadjusted, [1.0/quadplane.fx + quadplane.xadjust, 1.0/quadplane.fy + quadplane.yadjust]);		//top right
 			gl.uniform2fv(activeProg.uniforms.xMultShift, [0.5, 0.5]);
 			gl.uniform2fv(activeProg.uniforms.adjust, [-quadplane.xadjust, -quadplane.yadjust ]);
-			gl.viewport(gl.viewportWidth/2, gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
+			setGlViewportIfNecessary(gl.viewportWidth/2, gl.viewportHeight/2, gl.viewportWidth/2, gl.viewportHeight/2);
 			gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 			
 			gl.uniform2fv(activeProg.uniforms.uInvFadjusted, [1.0/quadplane.fx + quadplane.xadjust, 1.0/quadplane.fy + quadplane.yadjust]);		//bottom right
 			gl.uniform2fv(activeProg.uniforms.yMultShift, [0.5, -0.5]);
 			gl.uniform2fv(activeProg.uniforms.adjust, [-quadplane.xadjust, quadplane.yadjust ]);
-			gl.viewport(gl.viewportWidth/2, 0, gl.viewportWidth/2, gl.viewportHeight/2);
+			setGlViewportIfNecessary(gl.viewportWidth/2, 0, gl.viewportWidth/2, gl.viewportHeight/2);
 		}else{
 			gl.uniform2fv(activeProg.uniforms.uInvF, [1.0/rttView.fx, 1.0/rttView.fy]);
 			//gl.uniform2fv(activeProg.uniforms.uInvF, [1.0, 1.0]);
@@ -1078,7 +1095,7 @@ function initCubemapFramebuffer()
 
 
 function setupScene() {
-	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+	setGlViewportIfNecessary(0, 0, gl.viewportWidth, gl.viewportHeight);
 	
 	mat4.identity(playerMatrix);
 }
