@@ -838,11 +838,13 @@ function drawScene(frameTime){
 	var maxyvert = var2;
 	var maxxvert = var2*screenAspect;
 	var vfov = (360/Math.PI)*Math.atan2(maxyvert , 2.0 + var1*maxyvert*maxyvert);
-	guiParams.vFOV = vfov.toFixed(1);
 	
 	var hfov = (360/Math.PI)*Math.atan2(maxxvert , 2.0 + var1*maxxvert*maxxvert);
-	guiParams.hFOV = hfov.toFixed(1);
-	
+
+	if (guiParams.updateGui){
+		guiParams.vFOV = vfov.toFixed(1);
+		guiParams.hFOV = hfov.toFixed(1);
+	}
 	//console.log("hfov calculation - maxxvert = " + maxxvert + "var1 = " + var1 + ", screenAspect = " + screenAspect );
 	
 	
@@ -1120,6 +1122,7 @@ var stats;
 var gui;
 var pointerLocked=false;
 var guiParams={
+	updateGui: true,
 	pixSizeMultiplier:1.0,
 	strength:1.0,
 	zoom:2.5,
@@ -1154,6 +1157,7 @@ function init(){
 	document.body.appendChild( stats.dom );
 	
 	gui = new dat.GUI();
+	gui.add(guiParams, 'updateGui');
 	gui.add(guiParams, 'pixSizeMultiplier', 0.25, 4.0, 0.25).listen();
 	gui.add(guiParams, 'strength', -0.2, 1.5, 0.1).listen();
 	gui.add(guiParams, 'zoom', 1, 10, 0.01).listen();
