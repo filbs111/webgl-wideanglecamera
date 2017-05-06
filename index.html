@@ -179,7 +179,16 @@
 	}
 </script>
 
-
+<!-- tex mapped pix shader -->
+<script id="shader-texmap-notint-fs" type="x-shader/x-fragment">
+	precision mediump float;
+	varying vec2 vTextureCoord;
+	uniform sampler2D uSampler;
+	
+	void main(void) {
+		gl_FragColor = texture2D(uSampler, vTextureCoord);
+	}
+</script>
 
 <!-- tex mapped pix shader -->
 <script id="shader-texmap-fs" type="x-shader/x-fragment">
@@ -340,7 +349,7 @@ function initShaders(){
 					uniforms:["uPMatrix","uMVMatrix","uColor","uStrengthVec"]
 					});
 					
-	shaderProgramTexmapDistort = loadShader( "shader-texmap-vs-distort", "shader-texmap-fs",{
+	shaderProgramTexmapDistort = loadShader( "shader-texmap-vs-distort", "shader-texmap-notint-fs",{
 					attributes:["aVertexPosition", "aTextureCoord"],
 					uniforms:["uPMatrix","uMVMatrix","uSampler","uTintColor","uStrengthVec"]
 					});
@@ -465,13 +474,6 @@ function setLevelTintColor(arr){
 	} else {
 		gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, [1.0,1.0,1.0,1.0]);
 	};
-	
-	gl.useProgram(shaderProgramTexmapDistort);
-	if (guiParams.tintViews){
-		gl.uniform4fv(shaderProgramTexmapDistort.uniforms.uTintColor, arr);	//set tint colour
-	} else {
-		gl.uniform4fv(shaderProgramTexmapDistort.uniforms.uTintColor, [1.0,1.0,1.0,1.0]);
-	};
 }
 
 function drawScene(frameTime){
@@ -500,7 +502,6 @@ function drawScene(frameTime){
 	
 	if (rendertype == "straight"){
 		//draw the scene straight to the screen
-		setLevelTintColor([1.0,1.0,1.0,1.0]);
 		
 		//use same FOV as set by the current var2, and var1 value for rectilinear (0)
 		var vfov = (360/Math.PI)*Math.atan2(var2 , 2.0);
