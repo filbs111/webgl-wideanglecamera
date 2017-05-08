@@ -6,7 +6,7 @@ var canvas;
 //mostly from view-source:http://learningwebgl.com/lessons/lesson01/index.html
 function initGL(){
 	try {
-		gl = canvas.getContext("webgl");
+		gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 		resizecanvas();
 	} catch (e) {
 	}
@@ -20,8 +20,7 @@ function resizecanvas(){
 	var scaledWidth = screenWidth;
 	var scaledHeight = screenHeight;
 
-	var pixelScale = window.devicePixelRatio || 1;
-	pixelScale/=guiParams.pixSizeMultiplier;
+	var pixelScale = 1/guiParams.pixSizeMultiplier;
 	
 	//console.log("device pixel ratio = " + window.devicePixelRatio);
 	scaledWidth*=pixelScale;
@@ -74,6 +73,7 @@ function getShader(gl, id) {
 }
 
 function loadShader(vs_id,fs_id, obj) {
+	console.log("loadshader called, vs_id = " + vs_id);
 	var fragmentShader = getShader(gl, vs_id);		//TODO check whether shader already got
 	var vertexShader = getShader(gl, fs_id);
 
