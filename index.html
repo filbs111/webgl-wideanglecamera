@@ -294,6 +294,7 @@
 
 <script type="text/javascript" src="data/wt_teapot-trimmed.obj.json"></script>
 <script type="text/javascript" src="data/sship-ypoint.obj.json"></script>
+<script type="text/javascript" src="data/guncyl.obj.json"></script>
 
 <script type="text/javascript">
 //will make a simple test scene in this project, with view to combining with code to do stereographic projection
@@ -426,6 +427,7 @@ function initFullscreenBuffers() {
 var sphereBuffers={};
 var cubeBuffers={};
 var sshipBuffers={};
+var gunBuffers={};
 var teapotBuffers={};
 
 function initBuffers(){
@@ -445,6 +447,10 @@ function initBuffers(){
 	var sshipObject = loadBlenderExport(sshipdata);
 	delete sshipObject.normals;	//because current shader doesn't use
 	loadBufferData(sshipBuffers, sshipObject);
+	
+	var gunObject = loadBlenderExport(guncyldata.meshes[0]);
+	delete gunObject.normals;	//because current shader doesn't use
+	loadBufferData(gunBuffers, gunObject);
 
 	var teapotObject = loadBlenderExport(teapotData);
 	delete teapotObject.normals;	//because current shader doesn't use
@@ -978,6 +984,7 @@ function drawWorldScene(frameTime) {
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.9, 0.1, 0.1, 1.0]);
 			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
+
 			mat4.set(playerCamera, mvMatrix);
 			if (!guiParams.dropSpaceship){
 				mat4.multiply(mvMatrix, invertedPlayerMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
@@ -986,6 +993,35 @@ function drawWorldScene(frameTime) {
 			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.1, 0.1, 0.1, 1.0]);
 			drawObjectFromBuffers(sshipBuffers, activeProg);
+			
+			
+			//draw a "gun object"
+			var gunHoriz = 0.2;	//note different values to 3sphere project. TODO standardise method of multiplying matrices, positioning stuff in world etc
+			var gunVert = 0.1;
+			var gunFront = -0.3;
+			
+			var gunMatrix = mat4.create();
+			var saveMatrix = mat4.create();
+			if (!guiParams.dropSpaceship){
+				mat4.set(invertedPlayerMatrix,saveMatrix);
+			}else{
+				mat4.identity(saveMatrix);
+			}
+			
+			var gunOffsets = [[gunHoriz,gunVert,gunFront],
+								[-gunHoriz,gunVert,gunFront],
+								[gunHoriz,-gunVert,gunFront],
+								[-gunHoriz,-gunVert,gunFront]];
+			
+			gunOffsets.forEach(function(offset){
+				mat4.set(saveMatrix, gunMatrix);
+				mat4.translate(gunMatrix, offset);
+				mat4.set(playerCamera, mvMatrix);
+				mat4.multiply(mvMatrix, gunMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
+				mat4.scale(mvMatrix, [0.5, 0.5, 0.5]);
+				gl.uniform4fv(activeProg.uniforms.uColor, [0.3, 0.3, 0.3, 1.0]);
+				drawObjectFromBuffers(gunBuffers, activeProg);
+			});
 			
 			//draw teapot
 			mat4.set(playerCamera, mvMatrix)
@@ -1220,7 +1256,7 @@ function init(){
 		'biplanar (2 views)' : '2plane',
 		'quadplane (4 views)': '4plane',
 		'cubemap (6 views)': 'cubemap'} 
-	guiParams.renderingMethod = 'straight';
+	guiParams.renderingMethod = 'cubemap';
 	gui.add(guiParams, 'renderingMethod', renderingMethodOptions ).listen().onFinishChange(function(){
 		this.domElement.children[0].blur();
 	});	//hack to try to prevent arrow keys changing dropdown after selected something
