@@ -897,6 +897,10 @@ function drawWorldScene(frameTime) {
 		//console.log("drawing...");
 		var activeProg;
 	
+		var invertedPlayerMatrix = mat4.create();
+		mat4.set(playerMatrix, invertedPlayerMatrix);
+		mat4.inverse(invertedPlayerMatrix);
+	
 		mat4.set(playerCamera, mvMatrix)
 		mat4.rotateX(mvMatrix,Math.PI);	//turn upside down so texture looks right
 		mat4.scale(mvMatrix, [10,10,10]);
@@ -967,20 +971,18 @@ function drawWorldScene(frameTime) {
 			mat4.rotateY(mvMatrix,Math.PI/2);
 			drawBallRing();
 			
-			//draw a ball at centre of level
+			//draw a ball to show nosecam
 			mat4.set(playerCamera, mvMatrix)
 			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
+			mat4.translate(mvMatrix, [0.0, 0.0, -100*guiParams.camFwdShift]);
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.9, 0.1, 0.1, 1.0]);
 			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
-			//draw spacehip, shifted back such that nose is at centre of level
-			if (guiParams.dropSpaceship){
-				mat4.set(playerCamera, mvMatrix);
-			}else{
-				mat4.identity(mvMatrix);
+			mat4.set(playerCamera, mvMatrix);
+			if (!guiParams.dropSpaceship){
+				mat4.multiply(mvMatrix, invertedPlayerMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
 			}
-
-			mat4.translate(mvMatrix, [0.0, 0.0, guiParams.camFwdShift]);
+			//mat4.translate(mvMatrix, [0.0, 0.0, guiParams.camFwdShift]);
 			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.1, 0.1, 0.1, 1.0]);
 			drawObjectFromBuffers(sshipBuffers, activeProg);
