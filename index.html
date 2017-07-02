@@ -976,7 +976,7 @@ function drawWorldScene(frameTime) {
 				mat4.identity(mvMatrix);
 			}
 
-			mat4.translate(mvMatrix, [0.0, 0.0, 0.5]);
+			mat4.translate(mvMatrix, [0.0, 0.0, guiParams.camFwdShift]);
 			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.1, 0.1, 0.1, 1.0]);
 			drawObjectFromBuffers(sshipBuffers, activeProg);
@@ -1179,6 +1179,7 @@ var guiParams={
 	drawBox: true,
 	drawBalls: true,
 	dropSpaceship: true,
+	camFwdShift: 0.5,
 	resizeCanvas: true,
 	recalcParams: true,
 	keepInsideBox: true,
@@ -1256,6 +1257,7 @@ function init(){
 	gui.add(guiParams, 'drawBox');
 	gui.add(guiParams, 'drawBalls');
 	gui.add(guiParams, 'dropSpaceship');
+	gui.add(guiParams, 'camFwdShift',-0.6,0.6,0.05);
 	gui.add(guiParams, 'resizeCanvas');
 	gui.add(guiParams, 'recalcParams');
 
