@@ -899,6 +899,8 @@ function drawScene(frameTime){
 }
 
 
+var gunRot=0;
+
 function drawWorldScene(frameTime) {		
 		//console.log("drawing...");
 		var activeProg;
@@ -998,7 +1000,7 @@ function drawWorldScene(frameTime) {
 			//draw a "gun object"
 			var gunHoriz = 0.2;	//note different values to 3sphere project. TODO standardise method of multiplying matrices, positioning stuff in world etc
 			var gunVert = 0.1;
-			var gunFront = -0.3;
+			var gunFront = -0.1;
 			
 			var gunMatrix = mat4.create();
 			var saveMatrix = mat4.create();
@@ -1016,6 +1018,9 @@ function drawWorldScene(frameTime) {
 			gunOffsets.forEach(function(offset){
 				mat4.set(saveMatrix, gunMatrix);
 				mat4.translate(gunMatrix, offset);
+				mat4.rotateY(gunMatrix, gunRot);
+				mat4.translate(gunMatrix, [0,0,-0.2]);
+
 				mat4.set(playerCamera, mvMatrix);
 				mat4.multiply(mvMatrix, gunMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
 				mat4.scale(mvMatrix, [0.5, 0.5, 0.5]);
