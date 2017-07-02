@@ -365,6 +365,7 @@ var nMatrix = mat3.create();
 
 var playerMatrix = mat4.create();
 var playerCamera = mat4.create();
+var sshipNoseMatrix = mat4.create();
 var camParams={near:0.05, far:100};
 
 function setMatrixUniforms(shaderProgram) {
@@ -538,6 +539,9 @@ function drawScene(frameTime){
 	
 	var invcscale = 1.0/cubescale;
 	
+	mat4.identity(sshipNoseMatrix);
+	mat4.translate(sshipNoseMatrix,[0,0,guiParams.camFwdShift]);
+	mat4.multiply(sshipNoseMatrix, playerMatrix, sshipNoseMatrix);
 	
 	if (rendertype == "straight"){
 		//draw the scene straight to the screen
@@ -546,7 +550,7 @@ function drawScene(frameTime){
 		var vfov = (360/Math.PI)*Math.atan2(var2 , 2.0);
 		mat4.perspective(vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
 		
-		mat4.set(playerMatrix, playerCamera);
+		mat4.set(sshipNoseMatrix, playerCamera);
 		setGlViewportIfNecessary(0, 0, gl.viewportWidth, gl.viewportHeight);
 	
 		drawWorldScene(frameTime, 0);
@@ -561,7 +565,7 @@ function drawScene(frameTime){
 			setGlViewportIfNecessary(0, 0, rttFramebuffer.width, rttFramebuffer.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, camParams.near, camParams.far, pMatrix);	//FOV set 
-			mat4.set(playerMatrix, playerCamera);
+			mat4.set(sshipNoseMatrix, playerCamera);
 			drawWorldScene(frameTime, 0);
 			clearBorder();
 		}else if (rendertype == "2plane"){
@@ -587,7 +591,7 @@ function drawScene(frameTime){
 			var tan_cant_ang=biplane.tan_cant_ang;
 			
 			mat4.rotateY(playerCamera, Math.atan(tan_cant_ang));
-			mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
 			
 			pMatrix[8]=1.0-tan_cant_ang/biplane.fx;
 			
@@ -605,7 +609,7 @@ function drawScene(frameTime){
 			mat4.identity(playerCamera);
 
 			mat4.rotateY(playerCamera, -Math.atan(tan_cant_ang));
-			mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
 			
 			pMatrix[8]=-1.0+tan_cant_ang/biplane.fx;
 			
@@ -626,7 +630,7 @@ function drawScene(frameTime){
 			
 			mat4.identity(playerCamera);
 
-			mat4.multiply(playerCamera, playerMatrix, playerCamera);
+			mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
 			
 
 			//shift centre of perspective 
@@ -742,7 +746,7 @@ function drawScene(frameTime){
 				mat4.rotateY(playerCamera, rotsY[ii]);
 				mat4.rotateX(playerCamera, rotsX[ii]);
 				
-				mat4.multiply(playerCamera, playerMatrix, playerCamera);
+				mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
 				drawWorldScene(frameTime);
 			}
 		}
