@@ -417,28 +417,18 @@ function initFullscreenBuffers() {
 
 
 
-var vertexPositionBuffer;
-//var vertexNormalBuffer;
-//var vertexTextureCoordBuffer;
-var vertexIndexBuffer;
-
+var sphereBuffers={};
+var cubeBuffers={};
+/*
 var cubeVertexPositionBuffer;
 var cubeVertexTextureCoordBuffer;
 var cubeVertexIndexBuffer;
+*/
 
 function initBuffers(){
-	var sphereData = makeSphereData(15,32,1.3);
-
-	vertexPositionBuffer = gl.createBuffer();
-	bufferArrayData(vertexPositionBuffer, sphereData.vertices, 3);
-
-	var indexData = sphereData.indices;
-	vertexIndexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
-	vertexIndexBuffer.itemSize = 3;
-	vertexIndexBuffer.numItems = indexData.length;
-	
+	var sphereData = makeSphereData(15,32,1);
+	delete sphereData.uvcoords;	//because current shader doesn't use
+	loadBufferData(sphereBuffers, sphereData);
 	
 	//level cube. data is in data/levelCubeData.js
 	subdivideMeshData(levelCubeData);	//2x2 grid faces
@@ -447,17 +437,8 @@ function initBuffers(){
 	subdivideMeshData(levelCubeData);	//16x16
 	subdivideMeshData(levelCubeData);	//32x32
 
-	cubeVertexPositionBuffer= gl.createBuffer();
-	bufferArrayData(cubeVertexPositionBuffer, levelCubeData.vertices, 3);
-	
-	cubeVertexTextureCoordBuffer= gl.createBuffer();
-	bufferArrayData(cubeVertexTextureCoordBuffer, levelCubeData.uvcoords, 2);
-	
-	cubeVertexIndexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(levelCubeData.indices), gl.STATIC_DRAW);
-	cubeVertexIndexBuffer.itemSize = 3;
-	cubeVertexIndexBuffer.numItems = levelCubeData.indices.length;
+	loadBufferData(cubeBuffers, levelCubeData);
+
 	
 	function bufferArrayData(buffer, arr, size){
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -465,6 +446,28 @@ function initBuffers(){
 		buffer.itemSize = size;
 		buffer.numItems = arr.length / size;
 	}
+	
+	function loadBufferData(bufferObj, sourceData){
+		bufferObj.vertexPositionBuffer = gl.createBuffer();
+		bufferArrayData(bufferObj.vertexPositionBuffer, sourceData.vertices, 3);
+			
+		if (sourceData.uvcoords){
+			bufferObj.vertexTextureCoordBuffer= gl.createBuffer();
+			bufferArrayData(bufferObj.vertexTextureCoordBuffer, sourceData.uvcoords, 2);
+		}
+		
+		if (sourceData.normals){
+			bufferObj.vertexNormalBuffer= gl.createBuffer();
+			bufferArrayData(bufferObj.vertexNormalBuffer, sourceData.normals, 3);
+		}
+		
+		bufferObj.vertexIndexBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferObj.vertexIndexBuffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sourceData.indices), gl.STATIC_DRAW);
+		bufferObj.vertexIndexBuffer.itemSize = 3;
+		bufferObj.vertexIndexBuffer.numItems = sourceData.indices.length;
+	}
+	
 }
 
 function setLevelTintColor(arr){
@@ -890,25 +893,9 @@ function drawWorldScene(frameTime) {
 			}
 			
 			
-			
 			gl.enableVertexAttribArray(1);
-			
-			gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
-			gl.vertexAttribPointer(activeProg.attributes.aVertexPosition, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-			gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
-			gl.vertexAttribPointer(activeProg.attributes.aTextureCoord, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-			
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
-			setMatrixUniforms(activeProg);
-			
-			//gl.uniform4fv(shaderProgramTexmap.uniforms.uTintColor, [1.0,0.5,0.5,1.0]);	//set tint colour
-			
-			
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, texture);
-			gl.uniform1i(activeProg.uniforms.uSampler, 0);
-			
-			gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+						
+			drawObjectFromBuffers(cubeBuffers, activeProg);
 
 		}
 
@@ -936,9 +923,7 @@ function drawWorldScene(frameTime) {
 			
 			mat4.translate(mvMatrix, [0.0, 0.0, -10]);
 			
-			setupSphereDrawing();
-			drawSphereInstance();
-			
+			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
 			var angStep = Math.PI/8;
 			
@@ -966,29 +951,43 @@ function drawWorldScene(frameTime) {
 			for (var ii=0;ii<16;ii++){
 				mat4.rotateX(mvMatrix, angStep);
 				mat4.translate(mvMatrix, [0.0, 0.0, -10]);
-				drawSphereInstance();
+				drawObjectFromPreppedBuffers(sphereBuffers, activeProg);
 				mat4.translate(mvMatrix, [0.0, 0.0, 10]);
 			}
 		}
 
 }
 
-function setupSphereDrawing(){
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-	
-	var activeProgram = (guiParams.renderingMethod == 'straight') ? shaderProgramColoredDistort:shaderProgramColored;
-	
-    gl.vertexAttribPointer(activeProgram.attributes.aVertexPosition, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertexIndexBuffer);
-	
-	gl.uniformMatrix4fv(activeProgram.uniforms.uPMatrix, false, pMatrix);
-}
 
-function drawSphereInstance(){
-	var activeProgram = (guiParams.renderingMethod == 'straight') ? shaderProgramColoredDistort:shaderProgramColored;
+function drawObjectFromBuffers(bufferObj, shaderProg){
+	prepBuffersForDrawing(bufferObj, shaderProg);
+	drawObjectFromPreppedBuffers(bufferObj, shaderProg);
+}
+function prepBuffersForDrawing(bufferObj, shaderProg){
+	gl.enable(gl.CULL_FACE);
+	gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexPositionBuffer);
+    gl.vertexAttribPointer(shaderProg.attributes.aVertexPosition, bufferObj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	
-    gl.uniformMatrix4fv(activeProgram.uniforms.uMVMatrix, false, mvMatrix);
-	gl.drawElements(gl.TRIANGLES, vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+	if (bufferObj.vertexNormalBuffer){
+		gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexNormalBuffer);
+		gl.vertexAttribPointer(shaderProg.attributes.aVertexNormal, bufferObj.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	}
+	
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferObj.vertexIndexBuffer);
+	
+	if (bufferObj.vertexTextureCoordBuffer){
+		gl.bindBuffer(gl.ARRAY_BUFFER, bufferObj.vertexTextureCoordBuffer);
+		gl.vertexAttribPointer(shaderProg.attributes.aTextureCoord, bufferObj.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.uniform1i(shaderProg.uniforms.uSampler, 0);
+	}
+	gl.uniformMatrix4fv(shaderProg.uniforms.uPMatrix, false, pMatrix);
+}
+function drawObjectFromPreppedBuffers(bufferObj, shaderProg){
+	gl.uniformMatrix4fv(shaderProg.uniforms.uMVMatrix, false, mvMatrix);
+	gl.drawElements(gl.TRIANGLES, bufferObj.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
 
 
