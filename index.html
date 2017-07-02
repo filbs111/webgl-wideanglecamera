@@ -970,7 +970,12 @@ function drawWorldScene(frameTime) {
 			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
 			//draw spacehip, shifted back such that nose is at centre of level
-			mat4.set(playerCamera, mvMatrix)
+			if (guiParams.dropSpaceship){
+				mat4.set(playerCamera, mvMatrix);
+			}else{
+				mat4.identity(mvMatrix);
+			}
+
 			mat4.translate(mvMatrix, [0.0, 0.0, 0.5]);
 			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.1, 0.1, 0.1, 1.0]);
@@ -1173,6 +1178,7 @@ var guiParams={
 	indentViews: false,
 	drawBox: true,
 	drawBalls: true,
+	dropSpaceship: true,
 	resizeCanvas: true,
 	recalcParams: true,
 	keepInsideBox: true,
@@ -1249,6 +1255,7 @@ function init(){
 	gui.add(guiParams, 'indentViews');
 	gui.add(guiParams, 'drawBox');
 	gui.add(guiParams, 'drawBalls');
+	gui.add(guiParams, 'dropSpaceship');
 	gui.add(guiParams, 'resizeCanvas');
 	gui.add(guiParams, 'recalcParams');
 
