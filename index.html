@@ -293,8 +293,11 @@
 <script type="text/javascript" src="data/levelCubeData.js"></script>
 
 <script type="text/javascript" src="data/wt_teapot-trimmed.obj.json"></script>
-<script type="text/javascript" src="data/sship-ypoint.obj.json"></script>
+<script type="text/javascript" src="data/sship-pointyc-tidy1-uv3a.obj.json"></script>
+
 <script type="text/javascript" src="data/guncyl.obj.json"></script>
+<script type="text/javascript" src="data/sstationdark1.obj.json"></script>
+
 
 <script type="text/javascript">
 //will make a simple test scene in this project, with view to combining with code to do stereographic projection
@@ -435,6 +438,7 @@ function initBuffers(){
 	delete sphereData.uvcoords;	//because current shader doesn't use
 	loadBufferData(sphereBuffers, sphereData);
 	
+	/*
 	//level cube. data is in data/levelCubeData.js
 	subdivideMeshData(levelCubeData);	//2x2 grid faces
 	subdivideMeshData(levelCubeData);	//4x4
@@ -443,8 +447,16 @@ function initBuffers(){
 	subdivideMeshData(levelCubeData);	//32x32
 
 	loadBufferData(cubeBuffers, levelCubeData);
+*/
+	var levelObject = loadBlenderExport(spacestationdata.meshes[0]);
+	delete levelObject.normals;
+	subdivideMeshData(levelObject);
+	subdivideMeshData(levelObject);
+	subdivideMeshData(levelObject);
 
-	var sshipObject = loadBlenderExport(sshipdata);
+	loadBufferData(cubeBuffers, levelObject);
+	
+	var sshipObject = loadBlenderExport(sshipdata.meshes[0]);
 	delete sshipObject.normals;	//because current shader doesn't use
 	loadBufferData(sshipBuffers, sshipObject);
 	
@@ -911,9 +923,12 @@ function drawWorldScene(frameTime) {
 	
 		mat4.set(playerCamera, mvMatrix)
 		mat4.rotateX(mvMatrix,Math.PI);	//turn upside down so texture looks right
-		mat4.scale(mvMatrix, [10,10,10]);
+		//mat4.scale(mvMatrix, [10,10,10]);
+		mat4.scale(mvMatrix, [10,10,-10]);
 
+		
 		if (guiParams.drawBox){
+		
 			//draw level cube
 			if (guiParams.renderingMethod == 'straight'){
 				activeProg=shaderProgramTexmapDistort;
@@ -921,6 +936,8 @@ function drawWorldScene(frameTime) {
 				activeProg=shaderProgramTexmap;
 			};
 			gl.useProgram(activeProg);
+			
+			gl.bindTexture(gl.TEXTURE_2D, levelTexture.texture);
 			
 			if (guiParams.renderingMethod == 'straight'){
 				var str = parseFloat(guiParams.strength);
@@ -957,7 +974,7 @@ function drawWorldScene(frameTime) {
 			mat4.set(playerCamera, mvMatrix)
 			
 			mat4.translate(mvMatrix, [0.0, 0.0, -10]);
-			
+			/*
 			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
 			var angStep = Math.PI/8;
@@ -978,7 +995,7 @@ function drawWorldScene(frameTime) {
 			mat4.set(playerCamera, mvMatrix)
 			mat4.rotateY(mvMatrix,Math.PI/2);
 			drawBallRing();
-			
+			*/
 			//draw a ball to show nosecam
 			mat4.set(playerCamera, mvMatrix)
 			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
@@ -986,16 +1003,31 @@ function drawWorldScene(frameTime) {
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.9, 0.1, 0.1, 1.0]);
 			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
+			
+			var savedShader = activeProg;
+			if (guiParams.renderingMethod == 'straight'){
+				activeProg=shaderProgramTexmapDistort;
+			}else{
+				activeProg=shaderProgramTexmap;
+			};
+			gl.useProgram(activeProg);
+			
+			gl.bindTexture(gl.TEXTURE_2D, sshipTexture.texture);
 
 			mat4.set(playerCamera, mvMatrix);
 			if (!guiParams.dropSpaceship){
 				mat4.multiply(mvMatrix, invertedPlayerMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
 			}
 			//mat4.translate(mvMatrix, [0.0, 0.0, guiParams.camFwdShift]);
-			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
-			gl.uniform4fv(activeProg.uniforms.uColor, [0.1, 0.1, 0.1, 1.0]);
+			mat4.scale(mvMatrix, [-0.01, 0.01, 0.01]);
+			gl.enableVertexAttribArray(1);
+
 			drawObjectFromBuffers(sshipBuffers, activeProg);
 			
+			activeProg=savedShader;
+			gl.useProgram(activeProg);
+			gl.disableVertexAttribArray(1);
+
 			
 			//draw a "gun object"
 			var gunHoriz = 0.2;	//note different values to 3sphere project. TODO standardise method of multiplying matrices, positioning stuff in world etc
@@ -1027,13 +1059,13 @@ function drawWorldScene(frameTime) {
 				gl.uniform4fv(activeProg.uniforms.uColor, [0.3, 0.3, 0.3, 1.0]);
 				drawObjectFromBuffers(gunBuffers, activeProg);
 			});
-			
+			/*
 			//draw teapot
 			mat4.set(playerCamera, mvMatrix)
 			mat4.translate(mvMatrix, [0.0, -0.5, -2]);
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.4, 0.3, 0.2, 1.0]);
 			drawObjectFromBuffers(teapotBuffers, activeProg);
-			
+			*/
 			
 		}
 		
@@ -1071,7 +1103,6 @@ function prepBuffersForDrawing(bufferObj, shaderProg){
 		gl.vertexAttribPointer(shaderProg.attributes.aTextureCoord, bufferObj.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.uniform1i(shaderProg.uniforms.uSampler, 0);
 	}
 	gl.uniformMatrix4fv(shaderProg.uniforms.uPMatrix, false, pMatrix);
@@ -1192,9 +1223,11 @@ function setupScene() {
 	mat4.identity(playerMatrix);
 }
 
-var texture;
-function initTexture() {
-	texture = gl.createTexture();
+var levelTexture={};
+var sshipTexture={};
+
+function initTexture(textureContainer, src) {
+	var texture = gl.createTexture();
 	texture.image = new Image();
 	texture.image.onload = function() {
 		gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -1205,7 +1238,8 @@ function initTexture() {
 		gl.generateMipmap(gl.TEXTURE_2D);
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
-	texture.image.src = "img/ash_uvgrid01.jpg";
+	texture.image.src = src;
+	textureContainer.texture = texture;
 }
 
 var stats;
@@ -1229,7 +1263,7 @@ var guiParams={
 	camFwdShift: 0.5,
 	resizeCanvas: true,
 	recalcParams: true,
-	keepInsideBox: true,
+	keepInsideBox: false,
 	lockPointer:function(){
 		canvas.requestPointerLock();
 		gui.close();
@@ -1424,14 +1458,16 @@ function init(){
 	initGL();
 	initTextureFramebuffer();
 	initShaders();
-	initTexture();
+	//initTexture(levelTexture, "img/ash_uvgrid01.jpg");
+	initTexture(levelTexture, "data/sstatdark1margin.png");
+	initTexture(sshipTexture, "data/sship1dark.png");
 	initFullscreenBuffers();
 	initCubemapFramebuffer();	//experimental!!
 	initBuffers();
-	gl.clearColor(0.0, 0.1, 0.1, 1.0);
+	gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
-	gl.cullFace(gl.FRONT)
+	gl.cullFace(gl.FRONT);
 	setupScene();
 	requestAnimationFrame(drawScene);
 }
