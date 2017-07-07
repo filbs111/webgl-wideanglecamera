@@ -1395,10 +1395,10 @@ function init(){
 				willPreventDefault=false;
 				break;
 			case 38:
-				pitchPlayer(-0.02);		//up arrow
+				pitchPlayer(-controlSpeed);		//up arrow
 				break;
 			case 40:
-				pitchPlayer(0.02);
+				pitchPlayer(controlSpeed);
 				break;
 		}
 		constrainPlayerPositionToBox();
