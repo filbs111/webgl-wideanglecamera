@@ -1352,6 +1352,9 @@ function init(){
 	movementFolder.add(guiParams, 'lockPointer');
 	movementFolder.add(guiParams, 'smoothMovement');
 	
+	keyThing.setKeydownCallback(70,function(){			//70=F
+		goFullscreen(canvas);
+	});
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
