@@ -1374,16 +1374,16 @@ function init(){
 				movePlayer([-controlSpeed,0,0]);
 				break;
 			case 39:
-				turnPlayer(0.02);
+				turnPlayer(controlSpeed);
 				break;
 			case 37:
-				turnPlayer(-0.02);
+				turnPlayer(-controlSpeed);
 				break;
 			case 81:				//Q
-				rollPlayer(-0.02);	
+				rollPlayer(-controlSpeed);	
 				break;
 			case 69:				//E
-				rollPlayer(0.02);	
+				rollPlayer(controlSpeed);	
 				break;
 			case 32:				//spacebar
 				movePlayer([0,-controlSpeed,0]);
