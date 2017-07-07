@@ -289,6 +289,8 @@
 
 
 <script type="text/javascript" src="utils/webgl_utils.js"></script>
+<script type="text/javascript" src="utils/keys.js"></script>
+
 <script type="text/javascript" src="data/sphere.js"></script>
 <script type="text/javascript" src="data/levelCubeData.js"></script>
 
@@ -540,6 +542,8 @@ function drawScene(frameTime){
 	requestAnimationFrame(drawScene);
 	stats.end();
 	stats.begin();
+	
+	if (guiParams.smoothMovement){iterateMechanics();}	//TODO make movement speed independent of framerate
 	
 	var var1 = parseFloat(guiParams.strength)*-0.125;
 	var var2 = parseFloat(10.0/guiParams.zoom);
@@ -1264,6 +1268,7 @@ var guiParams={
 	resizeCanvas: true,
 	recalcParams: true,
 	keepInsideBox: false,
+	smoothMovement: false,
 	lockPointer:function(){
 		canvas.requestPointerLock();
 		gui.close();
@@ -1345,22 +1350,25 @@ function init(){
 	var movementFolder = gui.addFolder('movement');
 	movementFolder.add(guiParams, 'keepInsideBox');
 	movementFolder.add(guiParams, 'lockPointer');
+	movementFolder.add(guiParams, 'smoothMovement');
+	
 	
 	window.addEventListener("keydown",function(evt){
 		console.log("key pressed : " + evt.keyCode);
 		var willPreventDefault=true;
+		var controlSpeed = guiParams.smoothMovement ? 0:0.1;
 		switch (evt.keyCode){
 			case 87:				//W
-				movePlayerFwd(0.1);
+				movePlayer([0,0,controlSpeed]);
 				break;
 			case 83:				//S
-				movePlayerFwd(-0.1);
+				movePlayer([0,0,-controlSpeed]);
 				break;
 			case 65:				//A
-				movePlayerLeft(0.1);
+				movePlayer([controlSpeed,0,0]);
 				break;
 			case 68:				//D
-				movePlayerLeft(-0.1);
+				movePlayer([-controlSpeed,0,0]);
 				break;
 			case 39:
 				turnPlayer(0.02);
@@ -1375,10 +1383,10 @@ function init(){
 				rollPlayer(0.02);	
 				break;
 			case 32:				//spacebar
-				movePlayerUp(-0.1);
+				movePlayer([0,-controlSpeed,0]);
 				break;
 			case 17:				//ctrl
-				movePlayerUp(0.1);
+				movePlayer([0,controlSpeed,0]);
 				break;
 			default:
 				willPreventDefault=false;
@@ -1472,25 +1480,31 @@ function init(){
 	requestAnimationFrame(drawScene);
 }
 
+var iterateMechanics = (function iterateMechanics(){
+	var lastTime=(new Date()).getTime();
+	var moveSpeed=0.01;
+	var rotateSpeed=0.01;
+
+	return function(){
+		var nowTime = (new Date()).getTime();
+		var timeElapsed = Math.min(nowTime - lastTime, 50);	//ms. 50ms -> slowdown if drop below 20fps 
+		//console.log("time elapsed: " + timeElapsed);
+		lastTime=nowTime;
+		
+		movePlayer([
+			moveSpeed*(keyThing.keystate(65)-keyThing.keystate(68)),	//lateral
+			moveSpeed*(keyThing.keystate(17)-keyThing.keystate(32)),	//vertical
+			moveSpeed*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
+		]);
+		
+		rotatePlayer([
+			rotateSpeed*(keyThing.keystate(40)-keyThing.keystate(38)), //pitch
+			rotateSpeed*(keyThing.keystate(39)-keyThing.keystate(37)), //turn
+			rotateSpeed*(keyThing.keystate(69)-keyThing.keystate(81)), //roll
+		]);
+	}
+})();
 var playerPosition = [0,0,0];
-function movePlayerFwd(amount){	
-	playerPosition[0] += amount*playerMatrix[2];
-	playerPosition[1] += amount*playerMatrix[6];
-	playerPosition[2] += amount*playerMatrix[10];
-	setPlayerTranslation(playerPosition);
-}
-function movePlayerUp(amount){	
-	playerPosition[0] += amount*playerMatrix[1];
-	playerPosition[1] += amount*playerMatrix[5];
-	playerPosition[2] += amount*playerMatrix[9];
-	setPlayerTranslation(playerPosition);
-}
-function movePlayerLeft(amount){	
-	playerPosition[0] += amount*playerMatrix[0];
-	playerPosition[1] += amount*playerMatrix[4];
-	playerPosition[2] += amount*playerMatrix[8];
-	setPlayerTranslation(playerPosition);
-}
 function movePlayer(vec){	//[left,up,forward]
 	playerPosition[0] += vec[0]*playerMatrix[0] + vec[1]*playerMatrix[1] + vec[2]*playerMatrix[2];
 	playerPosition[1] += vec[0]*playerMatrix[4] + vec[1]*playerMatrix[5] + vec[2]*playerMatrix[6];
