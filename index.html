@@ -572,9 +572,14 @@ function drawScene(frameTime){
 		var vfov = (360/Math.PI)*Math.atan2(var2 , 2.0);
 		mat4.perspective(vfov, gl.viewportWidth/ gl.viewportHeight, camParams.near, camParams.far, pMatrix); 
 		
-		mat4.set(sshipNoseMatrix, playerCamera);
+		mat4.identity(playerCamera);
+		if (guiParams.rearMirror){
+				mat4.scale(playerCamera, [1,1,-1]);
+				gl.cullFace(gl.BACK);
+		}
+		mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
+		
 		setGlViewportIfNecessary(0, 0, gl.viewportWidth, gl.viewportHeight);
-	
 		drawWorldScene(frameTime, 0);
 		
 	} else {
@@ -587,7 +592,14 @@ function drawScene(frameTime){
 			setGlViewportIfNecessary(0, 0, rttFramebuffer.width, rttFramebuffer.height);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			mat4.perspective(2*(180/Math.PI)*Math.atan(rttView.fy), rttView.fx/rttView.fy, camParams.near, camParams.far, pMatrix);	//FOV set 
-			mat4.set(sshipNoseMatrix, playerCamera);
+			
+			mat4.identity(playerCamera);
+			if (guiParams.rearMirror){
+				mat4.scale(playerCamera, [1,1,-1]);
+				gl.cullFace(gl.BACK);
+			}
+			mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
+			
 			drawWorldScene(frameTime, 0);
 			clearBorder();
 		}else if (rendertype == "2plane"){
@@ -613,6 +625,11 @@ function drawScene(frameTime){
 			var tan_cant_ang=biplane.tan_cant_ang;
 			
 			mat4.rotateY(playerCamera, Math.atan(tan_cant_ang));
+			
+			if (guiParams.rearMirror){
+				mat4.scale(playerCamera, [1,1,-1]);
+				gl.cullFace(gl.BACK);
+			}
 			mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
 			
 			pMatrix[8]=1.0-tan_cant_ang/biplane.fx;
@@ -631,6 +648,10 @@ function drawScene(frameTime){
 			mat4.identity(playerCamera);
 
 			mat4.rotateY(playerCamera, -Math.atan(tan_cant_ang));
+			
+			if (guiParams.rearMirror){
+				mat4.scale(playerCamera, [1,1,-1]);	//TODO premultiply sshipnosematrix by [1,1,-1] somehow for effectively sship rear camera
+			}
 			mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
 			
 			pMatrix[8]=-1.0+tan_cant_ang/biplane.fx;
@@ -651,7 +672,10 @@ function drawScene(frameTime){
 			setLevelTintColor([1.0,1.0,1.0,1.0]);
 			
 			mat4.identity(playerCamera);
-
+			if (guiParams.rearMirror){
+				mat4.scale(playerCamera, [1,1,-1]);
+				gl.cullFace(gl.BACK);
+			}
 			mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
 			
 
@@ -751,10 +775,15 @@ function drawScene(frameTime){
 				{x:cubescale,y:cubescale},
 			]
 			
+			if (guiParams.rearMirror){
+				gl.cullFace(gl.BACK);
+			}
+			
 			//do the same thing for cube map
 			for (var ii=0;ii<6;ii++){
 				//stretched cubemap. TODO precalc these, since using mat4.perspective is inefficient/ugly!
 				var thisfxfy = fxfy[ii];
+				
 				mat4.perspective( (360.0/Math.PI)*Math.atan(thisfxfy.x), thisfxfy.y/thisfxfy.x, camParams.near, camParams.far, pMatrix);
 			
 				setLevelTintColor(tints[ii]);
@@ -765,13 +794,23 @@ function drawScene(frameTime){
 				
 				//mat4.set(playerMatrix, playerCamera);
 				mat4.identity(playerCamera);
+				
 				mat4.rotateY(playerCamera, rotsY[ii]);
 				mat4.rotateX(playerCamera, rotsX[ii]);
 				
+				if (guiParams.rearMirror){
+					mat4.scale(playerCamera, [1,1,-1]);
+				}
+				
 				mat4.multiply(playerCamera, sshipNoseMatrix, playerCamera);
+								
 				drawWorldScene(frameTime);
 			}
+			
+			
 		}
+		//set back to normal behaviour
+		gl.cullFace(gl.FRONT);
 		
 		//setup for drawing to screen
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1269,6 +1308,7 @@ var guiParams={
 	recalcParams: true,
 	keepInsideBox: false,
 	smoothMovement: true,
+	rearMirror:false,
 	lockPointer:function(){
 		canvas.requestPointerLock();
 		gui.close();
@@ -1346,6 +1386,7 @@ function init(){
 	gui.add(guiParams, 'camFwdShift',-0.6,0.6,0.05);
 	gui.add(guiParams, 'resizeCanvas');
 	gui.add(guiParams, 'recalcParams');
+	gui.add(guiParams, 'rearMirror');
 
 	var movementFolder = gui.addFolder('movement');
 	movementFolder.add(guiParams, 'keepInsideBox');
