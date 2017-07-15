@@ -372,7 +372,7 @@ var nMatrix = mat3.create();
 var playerMatrix = mat4.create();
 var playerCamera = mat4.create();
 var sshipActiveCameraMatrix = mat4.create();
-var camParams={near:0.05, far:100};
+var camParams={near:0.025, far:100};
 
 function setMatrixUniforms(shaderProgram) {
     gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
@@ -565,8 +565,10 @@ function drawScene(frameTime){
 	if (guiParams.rearMirror){
 		mat4.scale(sshipActiveCameraMatrix, [1,1,-1]);
 		gl.cullFace(gl.BACK);
+		mat4.translate(sshipActiveCameraMatrix,[0,0,guiParams.rearCamFwdShift]);
+	}else{
+		mat4.translate(sshipActiveCameraMatrix,[0,0,guiParams.camFwdShift]);
 	}
-	mat4.translate(sshipActiveCameraMatrix,[0,0,guiParams.camFwdShift]);
 	mat4.multiply(sshipActiveCameraMatrix, playerMatrix, sshipActiveCameraMatrix);
 		
 	if (rendertype == "straight"){
@@ -1023,7 +1025,12 @@ function drawWorldScene(frameTime) {
 			mat4.translate(mvMatrix, [0.0, 0.0, -100*guiParams.camFwdShift]);
 			gl.uniform4fv(activeProg.uniforms.uColor, [0.9, 0.1, 0.1, 1.0]);
 			drawObjectFromBuffers(sphereBuffers, activeProg);
-			
+			//draw a ball to show rear cam
+			mat4.set(playerCamera, mvMatrix)
+			mat4.scale(mvMatrix, [0.01, 0.01, 0.01]);
+			mat4.translate(mvMatrix, [0.0, 0.0, -100*guiParams.rearCamFwdShift]);
+			gl.uniform4fv(activeProg.uniforms.uColor, [0.9, 0.1, 0.1, 1.0]);
+			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
 			var savedShader = activeProg;
 			if (guiParams.renderingMethod == 'straight'){
@@ -1270,18 +1277,19 @@ var guiParams={
 	updateGui: true,
 	pixSizeMultiplier:1.0,
 	strength:1.0,
-	zoom:2.5,
+	zoom:2,	//2.5=180 vFOV
 	renderingMethod:null,
 	hFOV:"",
 	vFOV:"",
-	autoCubemapScale:true,
+	autoCubemapScale:false,
 	tintViews: false,
 	clearBorders: true,
 	indentViews: false,
 	drawBox: true,
 	drawBalls: true,
-	dropSpaceship: true,
+	dropSpaceship: false,
 	camFwdShift: 0.5,
+	rearCamFwdShift: -0.6,
 	resizeCanvas: true,
 	recalcParams: true,
 	keepInsideBox: false,
@@ -1361,7 +1369,8 @@ function init(){
 	gui.add(guiParams, 'drawBox');
 	gui.add(guiParams, 'drawBalls');
 	gui.add(guiParams, 'dropSpaceship');
-	gui.add(guiParams, 'camFwdShift',-0.6,0.6,0.05);
+	gui.add(guiParams, 'camFwdShift', 0,0.6,0.02);
+	gui.add(guiParams, 'rearCamFwdShift', -0.6,0,0.02);
 	gui.add(guiParams, 'resizeCanvas');
 	gui.add(guiParams, 'recalcParams');
 	gui.add(guiParams, 'rearMirror');
