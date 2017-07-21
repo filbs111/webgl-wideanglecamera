@@ -372,6 +372,8 @@ var nMatrix = mat3.create();
 var playerMatrix = mat4.create();
 var playerCamera = mat4.create();
 var sshipActiveCameraMatrix = mat4.create();
+var iMatrix = mat4.create();
+mat4.identity(iMatrix);
 var camParams={near:0.025, far:100};
 
 function setMatrixUniforms(shaderProgram) {
@@ -1033,60 +1035,59 @@ function drawWorldScene(frameTime) {
 			drawObjectFromBuffers(sphereBuffers, activeProg);
 			
 			var savedShader = activeProg;
+			var sshipShader;
 			if (guiParams.renderingMethod == 'straight'){
-				activeProg=shaderProgramTexmapDistort;
+				sshipShader=shaderProgramTexmapDistort;
 			}else{
-				activeProg=shaderProgramTexmap;
+				sshipShader=shaderProgramTexmap;
 			};
 			gl.useProgram(activeProg);
-			
 			gl.bindTexture(gl.TEXTURE_2D, sshipTexture.texture);
 
-			mat4.set(playerCamera, mvMatrix);
-			if (!guiParams.dropSpaceship){
-				mat4.multiply(mvMatrix, invertedPlayerMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
-			}
-			//mat4.translate(mvMatrix, [0.0, 0.0, guiParams.camFwdShift]);
-			mat4.scale(mvMatrix, [-0.01, 0.01, 0.01]);
-			gl.enableVertexAttribArray(1);
-
-			drawObjectFromBuffers(sshipBuffers, activeProg);
+			drawSpaceship(invertedPlayerMatrix);
+			drawSpaceship(iMatrix);
 			
-			activeProg=savedShader;
-			gl.useProgram(activeProg);
-			gl.disableVertexAttribArray(1);
-
-			
-			//draw a "gun object"
-			var gunHoriz = 0.2;	//note different values to 3sphere project. TODO standardise method of multiplying matrices, positioning stuff in world etc
-			var gunVert = 0.1;
-			var gunFront = -0.1;
-			
-			var gunMatrix = mat4.create();
-			var saveMatrix = mat4.create();
-			if (!guiParams.dropSpaceship){
-				mat4.set(invertedPlayerMatrix,saveMatrix);
-			}else{
-				mat4.identity(saveMatrix);
-			}
-			
-			var gunOffsets = [[gunHoriz,gunVert,gunFront],
-								[-gunHoriz,gunVert,gunFront],
-								[gunHoriz,-gunVert,gunFront],
-								[-gunHoriz,-gunVert,gunFront]];
-			
-			gunOffsets.forEach(function(offset){
-				mat4.set(saveMatrix, gunMatrix);
-				mat4.translate(gunMatrix, offset);
-				mat4.rotateY(gunMatrix, gunRot);
-				mat4.translate(gunMatrix, [0,0,-0.2]);
-
+			function drawSpaceship(ipMat){
+				activeProg = sshipShader;
+				gl.useProgram(activeProg);
 				mat4.set(playerCamera, mvMatrix);
-				mat4.multiply(mvMatrix, gunMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
-				mat4.scale(mvMatrix, [0.5, 0.5, 0.5]);
-				gl.uniform4fv(activeProg.uniforms.uColor, [0.3, 0.3, 0.3, 1.0]);
-				drawObjectFromBuffers(gunBuffers, activeProg);
-			});
+				mat4.multiply(mvMatrix, ipMat);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
+
+				//mat4.translate(mvMatrix, [0.0, 0.0, guiParams.camFwdShift]);
+				mat4.scale(mvMatrix, [-0.01, 0.01, 0.01]);
+				gl.enableVertexAttribArray(1);
+
+				drawObjectFromBuffers(sshipBuffers, activeProg);
+				
+				activeProg=savedShader;
+				gl.useProgram(activeProg);
+				gl.disableVertexAttribArray(1);
+			
+				//draw a "gun object"
+				var gunHoriz = 0.2;	//note different values to 3sphere project. TODO standardise method of multiplying matrices, positioning stuff in world etc
+				var gunVert = 0.1;
+				var gunFront = -0.1;
+			
+				var gunMatrix = mat4.create();
+				var gunOffsets = [[gunHoriz,gunVert,gunFront],
+									[-gunHoriz,gunVert,gunFront],
+									[gunHoriz,-gunVert,gunFront],
+									[-gunHoriz,-gunVert,gunFront]];
+				
+				gunOffsets.forEach(function(offset){
+					mat4.set(ipMat, gunMatrix);
+					mat4.translate(gunMatrix, offset);
+					mat4.rotateY(gunMatrix, gunRot);
+					mat4.translate(gunMatrix, [0,0,-0.2]);
+
+					mat4.set(playerCamera, mvMatrix);
+					mat4.multiply(mvMatrix, gunMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
+					mat4.scale(mvMatrix, [0.5, 0.5, 0.5]);
+					gl.uniform4fv(activeProg.uniforms.uColor, [0.3, 0.3, 0.3, 1.0]);
+					drawObjectFromBuffers(gunBuffers, activeProg);
+				});
+			}
+			
 			/*
 			//draw teapot
 			mat4.set(playerCamera, mvMatrix)
@@ -1247,8 +1248,8 @@ function initCubemapFramebuffer()
 
 function setupScene() {
 	setGlViewportIfNecessary(0, 0, gl.viewportWidth, gl.viewportHeight);
-	
 	mat4.identity(playerMatrix);
+	movePlayer([1,1,-4]);
 }
 
 var levelTexture={};
@@ -1287,7 +1288,6 @@ var guiParams={
 	indentViews: false,
 	drawBox: true,
 	drawBalls: true,
-	dropSpaceship: false,
 	camFwdShift: 0.5,
 	rearCamFwdShift: -0.6,
 	resizeCanvas: true,
@@ -1368,7 +1368,6 @@ function init(){
 	gui.add(guiParams, 'indentViews');
 	gui.add(guiParams, 'drawBox');
 	gui.add(guiParams, 'drawBalls');
-	gui.add(guiParams, 'dropSpaceship');
 	gui.add(guiParams, 'camFwdShift', 0,0.6,0.02);
 	gui.add(guiParams, 'rearCamFwdShift', -0.6,0,0.02);
 	gui.add(guiParams, 'resizeCanvas');
