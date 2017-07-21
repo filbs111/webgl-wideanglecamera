@@ -564,7 +564,7 @@ function drawScene(frameTime){
 	var invcscale = 1.0/cubescale;
 	
 	mat4.identity(sshipActiveCameraMatrix);
-	if (guiParams.rearMirror){
+	if (rearMirror){
 		mat4.scale(sshipActiveCameraMatrix, [1,1,-1]);
 		gl.cullFace(gl.BACK);
 		mat4.translate(sshipActiveCameraMatrix,[0,0,guiParams.rearCamFwdShift]);
@@ -761,7 +761,7 @@ function drawScene(frameTime){
 				{x:cubescale,y:cubescale},
 			]
 			
-			if (guiParams.rearMirror){
+			if (rearMirror){
 				gl.cullFace(gl.BACK);
 			}
 			
@@ -1274,6 +1274,7 @@ function initTexture(textureContainer, src) {
 var stats;
 var gui;
 var pointerLocked=false;
+var rearMirror=false;
 var guiParams={
 	updateGui: true,
 	pixSizeMultiplier:1.0,
@@ -1294,7 +1295,6 @@ var guiParams={
 	recalcParams: true,
 	keepInsideBox: false,
 	smoothMovement: true,
-	rearMirror:false,
 	lockPointer:function(){
 		canvas.requestPointerLock();
 		gui.close();
@@ -1372,7 +1372,6 @@ function init(){
 	gui.add(guiParams, 'rearCamFwdShift', -0.6,0,0.02);
 	gui.add(guiParams, 'resizeCanvas');
 	gui.add(guiParams, 'recalcParams');
-	gui.add(guiParams, 'rearMirror');
 
 	var movementFolder = gui.addFolder('movement');
 	movementFolder.add(guiParams, 'keepInsideBox');
@@ -1514,7 +1513,7 @@ var iterateMechanics = (function iterateMechanics(){
 	var lastTime=(new Date()).getTime();
 	var moveSpeed=0.01;
 	var rotateSpeed=0.002;
-
+	
 	return function(){
 		var nowTime = (new Date()).getTime();
 		var timeElapsed = Math.min(nowTime - lastTime, 50);	//ms. 50ms -> slowdown if drop below 20fps 
@@ -1536,6 +1535,7 @@ var iterateMechanics = (function iterateMechanics(){
 			rotateAmount*(keyThing.keystate(69)-keyThing.keystate(81)), //roll
 		]);
 		
+		rearMirror=keyThing.keystate(82); 	//R
 		
 		//basic gamepad support
 		if (navigator.getGamepads() && navigator.getGamepads()[0]){	//not sure which of these fails on if no gamepads connected
@@ -1574,6 +1574,10 @@ var iterateMechanics = (function iterateMechanics(){
 			gpRotate[1] = Math.abs(axes[2])>deadZone ? rotateAmount*axes[2] : 0; //turn
 			gpRotate[2] = rotateAmount*(buttons[5].value-buttons[4].value); //roll
 			rotatePlayer(gpRotate);
+			
+			if (buttons[10].pressed){	//L3
+				rearMirror=true;
+			}
 		}
 		
 		
