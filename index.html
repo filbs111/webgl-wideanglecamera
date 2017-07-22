@@ -1082,7 +1082,7 @@ function drawWorldScene(frameTime) {
 
 					mat4.set(playerCamera, mvMatrix);
 					mat4.multiply(mvMatrix, gunMatrix);	//this SHOULD get the identity matrix (this works in 3sphere proj, but perhaps not here...)
-					mat4.scale(mvMatrix, [0.5, 0.5, 0.5]);
+					mat4.scale(mvMatrix, [-0.5, 0.5, 0.5]);
 					gl.uniform4fv(activeProg.uniforms.uColor, [0.3, 0.3, 0.3, 1.0]);
 					drawObjectFromBuffers(gunBuffers, activeProg);
 				});
