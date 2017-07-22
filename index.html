@@ -1450,16 +1450,22 @@ function init(){
 	
 	
 	canvas.addEventListener("mousedown", function(evt){
+		console.log("mouse down");
+		console.log(evt);
 		mouseInfo.x = evt.offsetX;
 		mouseInfo.y = evt.offsetY;
 		mouseInfo.dragging = true;
 		mouseInfo.lastPointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
+		mouseInfo.buttons = evt.buttons;
+		evt.preventDefault();
 	});
 	canvas.addEventListener("mouseup", function(evt){
 		mouseInfo.dragging = false;
+		mouseInfo.buttons = evt.buttons;
 	});
 	canvas.addEventListener("mouseout", function(evt){
 		mouseInfo.dragging = false;
+		mouseInfo.buttons = 0;
 	});
 	canvas.addEventListener("mousemove", function(evt){
 		if (mouseInfo.dragging){
@@ -1572,7 +1578,7 @@ var iterateMechanics = (function iterateMechanics(){
 			rotateAmount*(spinSpeed), //roll
 		]);
 		
-		rearMirror=keyThing.keystate(82); 	//R
+		rearMirror=keyThing.keystate(82) || mouseInfo.buttons & 4; 	//R or middle mouse click
 		
 		//basic gamepad support
 		if (navigator.getGamepads() && navigator.getGamepads()[0]){	//not sure which of these fails on if no gamepads connected
