@@ -1523,16 +1523,53 @@ var iterateMechanics = (function iterateMechanics(){
 		var moveAmount = timeElapsed*moveSpeed;
 		var rotateAmount = timeElapsed*rotateSpeed;
 		
+		//control player velocity?
+		//playerVelocity[0]*=0.9;
+		//playerVelocity[0]+=0.1*(keyThing.keystate(73) - keyThing.keystate(75));	//I,K
+		
+		var targetSpeed = 0.015;
+		acceleratePlayerTowardsTargetVel([
+			//target vel in frame of player
+			targetSpeed*(keyThing.keystate(65)-keyThing.keystate(68)),	//lateral
+			targetSpeed*(keyThing.keystate(17)-keyThing.keystate(32)),	//vertical
+			targetSpeed*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
+		], timeElapsed);
+		
+		function acceleratePlayerTowardsTargetVel(targetVel, timeElapsed){
+			//damp player velocity
+			var dampFactor = Math.pow(0.999,timeElapsed);	//tends to 0 as time -> inf		
+			var otherFactor = 1-dampFactor;
+			
+			var targetVelWorld = [0,0,0];
+			//same matrix multiplication as movePlayer func. TODO generalise and neaten (should use glMatrix !)
+			targetVelWorld[0] += targetVel[0]*playerMatrix[0] + targetVel[1]*playerMatrix[1] + targetVel[2]*playerMatrix[2];
+			targetVelWorld[1] += targetVel[0]*playerMatrix[4] + targetVel[1]*playerMatrix[5] + targetVel[2]*playerMatrix[6];
+			targetVelWorld[2] += targetVel[0]*playerMatrix[8] + targetVel[1]*playerMatrix[9] + targetVel[2]*playerMatrix[10];
+			
+			for (var cc=0;cc<3;cc++){
+				playerVelocity[cc]*=dampFactor;
+				playerVelocity[cc]+=otherFactor*targetVelWorld[cc];
+			}
+		}
+		
+		movePlayerInWorldFrame(playerVelocity, timeElapsed);
+		
+		/*
 		movePlayer([
 			moveAmount*(keyThing.keystate(65)-keyThing.keystate(68)),	//lateral
 			moveAmount*(keyThing.keystate(17)-keyThing.keystate(32)),	//vertical
 			moveAmount*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
 		]);
+		*/
+		var spinDampFactor = Math.pow(0.994,timeElapsed);
+		var otherOtherFactor = 1-spinDampFactor;
+		spinSpeed *= spinDampFactor;
+		spinSpeed += spinDampFactor*0.08*(keyThing.keystate(69)-keyThing.keystate(81))
 		
 		rotatePlayer([
 			rotateAmount*(keyThing.keystate(40)-keyThing.keystate(38)), //pitch
 			rotateAmount*(keyThing.keystate(39)-keyThing.keystate(37)), //turn
-			rotateAmount*(keyThing.keystate(69)-keyThing.keystate(81)), //roll
+			rotateAmount*(spinSpeed), //roll
 		]);
 		
 		rearMirror=keyThing.keystate(82); 	//R
@@ -1584,6 +1621,8 @@ var iterateMechanics = (function iterateMechanics(){
 	}
 })();
 var playerPosition = [0,0,0];
+var playerVelocity = [0,0,0];
+var spinSpeed =0;
 function movePlayer(vec){	//[left,up,forward]
 	playerPosition[0] += vec[0]*playerMatrix[0] + vec[1]*playerMatrix[1] + vec[2]*playerMatrix[2];
 	playerPosition[1] += vec[0]*playerMatrix[4] + vec[1]*playerMatrix[5] + vec[2]*playerMatrix[6];
@@ -1591,6 +1630,14 @@ function movePlayer(vec){	//[left,up,forward]
 	setPlayerTranslation(playerPosition);
 	constrainPlayerPositionToBox();
 }
+function movePlayerInWorldFrame(vec, timeElapsed){
+	for (var cc=0;cc<3;cc++){
+		playerPosition[cc] += vec[cc]*timeElapsed;
+	}
+	setPlayerTranslation(playerPosition);
+	constrainPlayerPositionToBox();
+}
+
 function constrainPlayerPositionToBox(){
 	if (!guiParams.keepInsideBox){return;}
 	var boxSize =9.0;	//not able to go right up to the wall (full box size is 10)
