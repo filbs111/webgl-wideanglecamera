@@ -1426,6 +1426,34 @@ function init(){
 			case 40:
 				pitchPlayer(controlSpeed);
 				break;
+			case 97:
+			case 98:
+			case 99:
+			case 100:
+			case 101:
+			case 102:
+			case 103:
+			case 104:
+			case 105:
+				//num pad keys
+				var presetnum = evt.keyCode - 96;
+				console.log("loading camera preset  " + presetnum );
+				setCamPreset(presetnum);
+				break;
+			case 49:
+			case 50:
+			case 51:
+			case 52:
+			case 53:
+			case 54:
+			case 55:
+			case 56:
+			case 57:
+				//regular number keys
+				var presetnum = evt.keyCode - 48;
+				console.log("loading camera preset " + presetnum );
+				setCamPreset(presetnum);
+				break;
 		}
 		constrainPlayerPositionToBox();
 		if (willPreventDefault){evt.preventDefault()};
@@ -1437,6 +1465,26 @@ function init(){
 	document.addEventListener('pointerlockchange', lockChangeAlert, false);
 	document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
 
+	var setCamPreset = (function(){
+		var presets ={
+			1:{strength:1, zoom:2.5, renderingMethod:'cubemap'},  //vFOV 180 deg
+			2:{strength:1, zoom:6, renderingMethod:'4plane'},	//vFOV 90.5 deg
+			3:{strength:0, zoom:5, renderingMethod:'straight'},
+			4:{strength:0, zoom:6, renderingMethod:'straight'},
+		};
+		return function(presetNum){
+			var presetObj = presets[presetNum];
+			if (!presetObj){return 1;}
+						console.log("settings preset: " + presetNum);
+
+			var objKeys = Object.keys(presetObj);
+			for (var ii in objKeys){
+				var thisKey = objKeys[ii];
+				guiParams[thisKey]=presetObj[thisKey];
+			}
+		}
+	})();
+	
 	function lockChangeAlert() {
 	  if (document.pointerLockElement === canvas ||
 		  document.mozPointerLockElement === canvas) {
