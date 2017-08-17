@@ -545,7 +545,7 @@ function drawScene(frameTime){
 	stats.end();
 	stats.begin();
 	
-	if (guiParams.smoothMovement){iterateMechanics();}
+	if (guiParams.smoothMovement){catchupMechanics();}
 	
 	var var1 = parseFloat(guiParams.strength)*-0.125;
 	var var2 = parseFloat(10.0/guiParams.zoom);
@@ -1563,19 +1563,21 @@ function init(){
 	requestAnimationFrame(drawScene);
 }
 
-var iterateMechanics = (function iterateMechanics(){
+var catchupMechanics = (function catchupMechanics(){
 	var lastTime=(new Date()).getTime();
 	var moveSpeed=0.01;
 	var rotateSpeed=0.002;
 	
-	return function(){
-		var nowTime = (new Date()).getTime();
-		var timeElapsed = Math.min(nowTime - lastTime, 50);	//ms. 50ms -> slowdown if drop below 20fps 
-		//console.log("time elapsed: " + timeElapsed);
-		lastTime=nowTime;
-		
-		var moveAmount = timeElapsed*moveSpeed;
-		var rotateAmount = timeElapsed*rotateSpeed;
+	var timeToCatchup=0;
+	var timeStep=4;	//4ms. TODO interpolation so can use larger timestep without jerky display
+	
+	var thisGp, buttons, axes;
+	var deadZone = 0.15;	//for thumbsticks
+	
+	function iterateMechanics(){
+	
+		var moveAmount = timeStep*moveSpeed;
+		var rotateAmount = timeStep*rotateSpeed;
 		
 		//control player velocity?
 		//playerVelocity[0]*=0.9;
@@ -1587,11 +1589,11 @@ var iterateMechanics = (function iterateMechanics(){
 			targetSpeed*(keyThing.keystate(65)-keyThing.keystate(68)),	//lateral
 			targetSpeed*(keyThing.keystate(17)-keyThing.keystate(32)),	//vertical
 			targetSpeed*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
-		], timeElapsed);
+		], timeStep);
 		
-		function acceleratePlayerTowardsTargetVel(targetVel, timeElapsed){
+		function acceleratePlayerTowardsTargetVel(targetVel, timeStep){
 			//damp player velocity
-			var dampFactor = Math.pow(0.999,timeElapsed);	//tends to 0 as time -> inf		
+			var dampFactor = Math.pow(0.999,timeStep);	//tends to 0 as time -> inf		
 			var otherFactor = 1-dampFactor;
 			
 			var targetVelWorld = [0,0,0];
@@ -1606,7 +1608,7 @@ var iterateMechanics = (function iterateMechanics(){
 			}
 		}
 		
-		movePlayerInWorldFrame(playerVelocity, timeElapsed);
+		movePlayerInWorldFrame(playerVelocity, timeStep);
 		
 		/*
 		movePlayer([
@@ -1615,7 +1617,7 @@ var iterateMechanics = (function iterateMechanics(){
 			moveAmount*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
 		]);
 		*/
-		var spinDampFactor = Math.pow(0.994,timeElapsed);
+		var spinDampFactor = Math.pow(0.994,timeStep);
 		var otherOtherFactor = 1-spinDampFactor;
 		spinSpeed *= spinDampFactor;
 		spinSpeed += spinDampFactor*0.08*(keyThing.keystate(69)-keyThing.keystate(81))
@@ -1626,8 +1628,25 @@ var iterateMechanics = (function iterateMechanics(){
 			rotateAmount*(spinSpeed), //roll
 		]);
 		
-		rearMirror=keyThing.keystate(82) || mouseInfo.buttons & 4; 	//R or middle mouse click
+		if (thisGp){
+			gpMove=[];
+			gpMove[0] = Math.abs(axes[0])>deadZone ? -moveAmount*axes[0] : 0; //lateral
+			gpMove[1] = Math.abs(axes[1])>deadZone ? moveAmount*axes[1] : 0; //vertical
+			gpMove[2] = moveAmount*(buttons[7].value-buttons[6].value); //fwd/back
+			movePlayer(gpMove);
+			//users may prefer to have left thumbstick up/down control forward/back and use another control for spaceship up/down (similar to FPS controls)
+			
+			gpRotate=[];
+			gpRotate[0] = Math.abs(axes[3])>deadZone ? rotateAmount*axes[3] : 0; //pitch
+			gpRotate[1] = Math.abs(axes[2])>deadZone ? rotateAmount*axes[2] : 0; //turn
+			gpRotate[2] = rotateAmount*(buttons[5].value-buttons[4].value); //roll
+			rotatePlayer(gpRotate);
+		}
+	}
+	
+	return function(){
 		
+		thisGp=false;
 		//basic gamepad support
 		if (navigator.getGamepads() && navigator.getGamepads()[0]){	//not sure which of these fails on if no gamepads connected
 														//also not sure what happens if 2 gamepads connected and 0th is disconnected.
@@ -1651,26 +1670,24 @@ var iterateMechanics = (function iterateMechanics(){
 			//right thumbstick left(-1) to right(+1)
 			//right thumbstick up(-1) to down(+1)
 			
-			var deadZone = 0.15;	//for thumbsticks
-			
-			gpMove=[];
-			gpMove[0] = Math.abs(axes[0])>deadZone ? -moveAmount*axes[0] : 0; //lateral
-			gpMove[1] = Math.abs(axes[1])>deadZone ? moveAmount*axes[1] : 0; //vertical
-			gpMove[2] = moveAmount*(buttons[7].value-buttons[6].value); //fwd/back
-			movePlayer(gpMove);
-			//users may prefer to have left thumbstick up/down control forward/back and use another control for spaceship up/down (similar to FPS controls)
-			
-			gpRotate=[];
-			gpRotate[0] = Math.abs(axes[3])>deadZone ? rotateAmount*axes[3] : 0; //pitch
-			gpRotate[1] = Math.abs(axes[2])>deadZone ? rotateAmount*axes[2] : 0; //turn
-			gpRotate[2] = rotateAmount*(buttons[5].value-buttons[4].value); //roll
-			rotatePlayer(gpRotate);
+			rearMirror=keyThing.keystate(82) || mouseInfo.buttons & 4; 	//R or middle mouse click
 			
 			if (buttons[10].pressed){	//L3
 				rearMirror=true;
 			}
 		}
 		
+		var nowTime = (new Date()).getTime();
+		var timeElapsed = Math.min(nowTime - lastTime, 50);	//ms. 50ms -> slowdown if drop below 20fps 
+		//console.log("time elapsed: " + timeElapsed);
+		lastTime=nowTime;
+	
+		timeToCatchup+=timeElapsed;
+		
+		while (timeToCatchup>=timeStep){
+			timeToCatchup-=timeStep;
+			iterateMechanics();
+		}	
 		
 	}
 })();
