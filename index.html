@@ -1576,38 +1576,39 @@ var catchupMechanics = (function catchupMechanics(){
 	
 	var spinSpeed=0;
 	var spinAcc=0;
+	var spinRampMax=0.02;
+	
+	var currentThrust=[0,0,0];
+	var thrustRampMax=0.02;	//for 4ms timestep, 0.004 here means from 0 to max in 1s. 0.01-> in 0.4s etc
+	var thrustMax=0.00002;
 	
 	function iterateMechanics(){
 	
 		var moveAmount = timeStep*moveSpeed;
 		var rotateAmount = timeStep*rotateSpeed;
 		
-		//control player velocity?
-		//playerVelocity[0]*=0.9;
-		//playerVelocity[0]+=0.1*(keyThing.keystate(73) - keyThing.keystate(75));	//I,K
-		
-		var targetSpeed = 0.015;
-		acceleratePlayerTowardsTargetVel([
+		adjustPlayerThrust([
 			//target vel in frame of player
-			targetSpeed*(keyThing.keystate(65)-keyThing.keystate(68)),	//lateral
-			targetSpeed*(keyThing.keystate(17)-keyThing.keystate(32)),	//vertical
-			targetSpeed*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
+			keyThing.keystate(65)-keyThing.keystate(68),	//lateral
+			keyThing.keystate(17)-keyThing.keystate(32),	//vertical
+			keyThing.keystate(87)-keyThing.keystate(83),	//fwd/back
 		], timeStep);
 		
-		function acceleratePlayerTowardsTargetVel(targetVel, timeStep){
+		function adjustPlayerThrust(targetThrust, timeStep){
 			//damp player velocity
-			var dampFactor = Math.pow(0.999,timeStep);	//tends to 0 as time -> inf		
-			var otherFactor = 1-dampFactor;
+			var dampFactor = Math.pow(0.9999,timeStep);	//tends to 0 as time -> inf		
 			
-			var targetVelWorld = [0,0,0];
+			for (var ii=0;ii<3;ii++){
+				currentThrust[ii]+= Math.min(thrustRampMax,Math.max(-thrustRampMax,targetThrust[ii]-currentThrust[ii]));
+			}
+			
 			//same matrix multiplication as movePlayer func. TODO generalise and neaten (should use glMatrix !)
-			targetVelWorld[0] += targetVel[0]*playerMatrix[0] + targetVel[1]*playerMatrix[1] + targetVel[2]*playerMatrix[2];
-			targetVelWorld[1] += targetVel[0]*playerMatrix[4] + targetVel[1]*playerMatrix[5] + targetVel[2]*playerMatrix[6];
-			targetVelWorld[2] += targetVel[0]*playerMatrix[8] + targetVel[1]*playerMatrix[9] + targetVel[2]*playerMatrix[10];
-			
+			playerVelocity[0] += thrustMax*(currentThrust[0]*playerMatrix[0] + currentThrust[1]*playerMatrix[1] + currentThrust[2]*playerMatrix[2]);
+			playerVelocity[1] += thrustMax*(currentThrust[0]*playerMatrix[4] + currentThrust[1]*playerMatrix[5] + currentThrust[2]*playerMatrix[6]);
+			playerVelocity[2] += thrustMax*(currentThrust[0]*playerMatrix[8] + currentThrust[1]*playerMatrix[9] + currentThrust[2]*playerMatrix[10]);
+						
 			for (var cc=0;cc<3;cc++){
 				playerVelocity[cc]*=dampFactor;
-				playerVelocity[cc]+=otherFactor*targetVelWorld[cc];
 			}
 		}
 		
@@ -1623,7 +1624,6 @@ var catchupMechanics = (function catchupMechanics(){
 		
 		//simple model for acceleration eg linear ramp up and down. here total thrust goes as square of press time for short presses, and linearly after
 		var desiredSpinAcc = keyThing.keystate(69)-keyThing.keystate(81);	//from -1 to 1
-		var spinRampMax=0.02;
 		spinAcc+= Math.min(spinRampMax,Math.max(-spinRampMax,desiredSpinAcc-spinAcc));
 		
 		spinSpeed+=0.05*spinAcc;
