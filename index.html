@@ -1574,6 +1574,9 @@ var catchupMechanics = (function catchupMechanics(){
 	var thisGp, buttons, axes;
 	var deadZone = 0.15;	//for thumbsticks
 	
+	var spinSpeed=0;
+	var spinAcc=0;
+	
 	function iterateMechanics(){
 	
 		var moveAmount = timeStep*moveSpeed;
@@ -1617,10 +1620,14 @@ var catchupMechanics = (function catchupMechanics(){
 			moveAmount*(keyThing.keystate(87)-keyThing.keystate(83)),	//fwd/back
 		]);
 		*/
-		var spinDampFactor = Math.pow(0.994,timeStep);
-		var otherOtherFactor = 1-spinDampFactor;
-		spinSpeed *= spinDampFactor;
-		spinSpeed += spinDampFactor*0.08*(keyThing.keystate(69)-keyThing.keystate(81))
+		
+		//simple model for acceleration eg linear ramp up and down. here total thrust goes as square of press time for short presses, and linearly after
+		var desiredSpinAcc = keyThing.keystate(69)-keyThing.keystate(81);	//from -1 to 1
+		var spinRampMax=0.02;
+		spinAcc+= Math.min(spinRampMax,Math.max(-spinRampMax,desiredSpinAcc-spinAcc));
+		
+		spinSpeed+=0.05*spinAcc;
+		spinSpeed*=0.97;
 		
 		rotatePlayer([
 			rotateAmount*(keyThing.keystate(40)-keyThing.keystate(38)), //pitch
@@ -1693,7 +1700,6 @@ var catchupMechanics = (function catchupMechanics(){
 })();
 var playerPosition = [0,0,0];
 var playerVelocity = [0,0,0];
-var spinSpeed =0;
 function movePlayer(vec){	//[left,up,forward]
 	playerPosition[0] += vec[0]*playerMatrix[0] + vec[1]*playerMatrix[1] + vec[2]*playerMatrix[2];
 	playerPosition[1] += vec[0]*playerMatrix[4] + vec[1]*playerMatrix[5] + vec[2]*playerMatrix[6];
