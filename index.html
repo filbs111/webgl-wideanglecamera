@@ -1275,6 +1275,7 @@ var stats;
 var gui;
 var pointerLocked=false;
 var rearMirror=false;
+
 var guiParams={
 	updateGui: true,
 	pixSizeMultiplier:1.0,
@@ -1497,7 +1498,7 @@ function init(){
 	}
 	
 	
-	canvas.addEventListener("mousedown", function(evt){
+	canvas.addEventListener("mousedown", function(evt){	
 		console.log("mouse down");
 		console.log(evt);
 		mouseInfo.x = evt.offsetX;
@@ -1652,7 +1653,8 @@ var catchupMechanics = (function catchupMechanics(){
 	}
 	
 	return function(){
-		
+		rearMirror=keyThing.keystate(82) || (mouseInfo.buttons & 4); 	//R or middle mouse click
+			
 		thisGp=false;
 		//basic gamepad support
 		if (navigator.getGamepads() && navigator.getGamepads()[0]){	//not sure which of these fails on if no gamepads connected
@@ -1676,8 +1678,6 @@ var catchupMechanics = (function catchupMechanics(){
 			//left thumbstick up(-1) to down(+1)
 			//right thumbstick left(-1) to right(+1)
 			//right thumbstick up(-1) to down(+1)
-			
-			rearMirror=keyThing.keystate(82) || mouseInfo.buttons & 4; 	//R or middle mouse click
 			
 			if (buttons[10].pressed){	//L3
 				rearMirror=true;
