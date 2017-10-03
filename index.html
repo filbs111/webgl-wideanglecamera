@@ -1294,6 +1294,7 @@ var guiParams={
 	rearCamFwdShift: -0.6,
 	resizeCanvas: true,
 	recalcParams: true,
+	gravity: 0,
 	keepInsideBox: false,
 	smoothMovement: true,
 	lockPointer:function(){
@@ -1375,6 +1376,7 @@ function init(){
 	gui.add(guiParams, 'recalcParams');
 
 	var movementFolder = gui.addFolder('movement');
+	movementFolder.add(guiParams, 'gravity', -10 , 10, 1);
 	movementFolder.add(guiParams, 'keepInsideBox');
 	movementFolder.add(guiParams, 'lockPointer');
 	movementFolder.add(guiParams, 'smoothMovement');
@@ -1585,6 +1587,9 @@ var catchupMechanics = (function catchupMechanics(){
 	
 	function iterateMechanics(){
 	
+		//apply gravity
+		playerVelocity[1] += 0.0000001* timeStep * guiParams.gravity;
+	
 		var moveAmount = timeStep*moveSpeed;
 		var rotateAmount = timeStep*rotateSpeed;
 		
@@ -1719,8 +1724,8 @@ function constrainPlayerPositionToBox(){
 	if (!guiParams.keepInsideBox){return;}
 	var boxSize =9.0;	//not able to go right up to the wall (full box size is 10)
 	for (var ii=0;ii<3;ii++){
-		if (playerPosition[ii]>boxSize){playerPosition[ii]=boxSize;}
-		if (playerPosition[ii]<-boxSize){playerPosition[ii]=-boxSize;}
+		if (playerPosition[ii]>boxSize){playerPosition[ii]=boxSize;playerVelocity[ii]=0;}
+		if (playerPosition[ii]<-boxSize){playerPosition[ii]=-boxSize;playerVelocity[ii]=0;}
 	}
 	setPlayerTranslation(playerPosition);
 }
