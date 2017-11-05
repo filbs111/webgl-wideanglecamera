@@ -1299,9 +1299,10 @@ var guiParams={
 	rearMirror180: false,
 	resizeCanvas: true,
 	recalcParams: true,
-	gravity: 0,
-	keepInsideBox: false,
+	gravity: 5,
+	keepInsideBox: true,
 	smoothMovement: true,
+	autoRightStrength:0.25,
 	lockPointer:function(){
 		canvas.requestPointerLock();
 		gui.close();
@@ -1382,10 +1383,11 @@ function init(){
 	gui.add(guiParams, 'recalcParams');
 
 	var movementFolder = gui.addFolder('movement');
-	movementFolder.add(guiParams, 'gravity', -10 , 10, 1);
+	movementFolder.add(guiParams, 'gravity', 0 , 10, 1);
 	movementFolder.add(guiParams, 'keepInsideBox');
 	movementFolder.add(guiParams, 'lockPointer');
 	movementFolder.add(guiParams, 'smoothMovement');
+	movementFolder.add(guiParams, 'autoRightStrength',0,0.25,0.05);
 	
 	keyThing.setKeydownCallback(70,function(){			//70=F
 		goFullscreen(canvas);
@@ -1637,14 +1639,10 @@ var catchupMechanics = (function catchupMechanics(){
 		//simple model for acceleration eg linear ramp up and down. here total thrust goes as square of press time for short presses, and linearly after
 		var desiredSpinAcc = keyThing.keystate(69)-keyThing.keystate(81);	//from -1 to 1
 		
-		
-		//rotate player upright. 
-		//TODO only when no input (should effectively be auto input to right ship)
-		
-		//restoring "force" should be dependent on
-		//the upward component of the sideways player vector
-		//desiredSpinAcc+=playerMatrix[0];
-		
+		//roll player upright (ie so player's sidweways vector is horizontal)
+		//restoring "force" should be dependent on the upward component of the sideways player vector
+		desiredSpinAcc+=guiParams.autoRightStrength*playerMatrix[4];
+			//TODO only when little to no input (should effectively be auto input to right ship)		
 		
 		spinAcc+= Math.min(spinRampMax,Math.max(-spinRampMax,desiredSpinAcc-spinAcc));
 		
