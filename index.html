@@ -1636,6 +1636,16 @@ var catchupMechanics = (function catchupMechanics(){
 		
 		//simple model for acceleration eg linear ramp up and down. here total thrust goes as square of press time for short presses, and linearly after
 		var desiredSpinAcc = keyThing.keystate(69)-keyThing.keystate(81);	//from -1 to 1
+		
+		
+		//rotate player upright. 
+		//TODO only when no input (should effectively be auto input to right ship)
+		
+		//restoring "force" should be dependent on
+		//the upward component of the sideways player vector
+		//desiredSpinAcc+=playerMatrix[0];
+		
+		
 		spinAcc+= Math.min(spinRampMax,Math.max(-spinRampMax,desiredSpinAcc-spinAcc));
 		
 		spinSpeed+=0.05*spinAcc;
@@ -1668,7 +1678,7 @@ var catchupMechanics = (function catchupMechanics(){
 			
 		thisGp=false;
 		//basic gamepad support
-		if (navigator.getGamepads() && navigator.getGamepads()[0]){	//not sure which of these fails on if no gamepads connected
+		if (navigator.getGamepads() && navigator.getGamepads()[0] && navigator.getGamepads()[0].buttons && navigator.getGamepads()[0].buttons[10]){	//not sure which of these fails on if no gamepads connected
 														//also not sure what happens if 2 gamepads connected and 0th is disconnected.
 		
 			var thisGp=navigator.getGamepads()[0];	//not yet handling choosing one of multiple gamepads and keeping that gamepad selected.
