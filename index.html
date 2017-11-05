@@ -296,6 +296,7 @@
 
 <script type="text/javascript" src="data/wt_teapot-trimmed.obj.json"></script>
 <script type="text/javascript" src="data/sship-pointyc-tidy1-uv3a.obj.json"></script>
+<script type="text/javascript" src="data/clipper.obj.json.min"></script>
 
 <script type="text/javascript" src="data/guncyl.obj.json"></script>
 <script type="text/javascript" src="data/sstationdark1.obj.json"></script>
@@ -460,7 +461,9 @@ function initBuffers(){
 
 	loadBufferData(cubeBuffers, levelObject);
 	
-	var sshipObject = loadBlenderExport(sshipdata.meshes[0]);
+	var sshipObject = loadBlenderExport(clipperdata);
+	
+//	var sshipObject = loadBlenderExport(sshipdata.meshes[0]);
 	delete sshipObject.normals;	//because current shader doesn't use
 	loadBufferData(sshipBuffers, sshipObject);
 	
@@ -1562,7 +1565,8 @@ function init(){
 	initShaders();
 	//initTexture(levelTexture, "img/ash_uvgrid01.jpg");
 	initTexture(levelTexture, "data/sstatdark1margin.png");
-	initTexture(sshipTexture, "data/sship1dark.png");
+	//initTexture(sshipTexture, "data/sship1dark.png");
+	initTexture(sshipTexture, "data/clipper.png");
 	initFullscreenBuffers();
 	initCubemapFramebuffer();	//experimental!!
 	initBuffers();
