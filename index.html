@@ -1582,7 +1582,7 @@ var catchupMechanics = (function catchupMechanics(){
 	var timeToCatchup=0;
 	var timeStep=4;	//4ms. TODO interpolation so can use larger timestep without jerky display
 	
-	var thisGp, buttons, axes;
+	var activeGp, buttons, axes;
 	var deadZone = 0.15;	//for thumbsticks
 	
 	var spinSpeed=0;
@@ -1655,7 +1655,10 @@ var catchupMechanics = (function catchupMechanics(){
 			rotateAmount*(spinSpeed), //roll
 		]);
 		
-		if (thisGp){
+		if (activeGp){
+		
+			console.log(activeGp);
+		
 			gpMove=[];
 			gpMove[0] = Math.abs(axes[0])>deadZone ? -moveAmount*axes[0] : 0; //lateral
 			gpMove[1] = Math.abs(axes[1])>deadZone ? moveAmount*axes[1] : 0; //vertical
@@ -1674,13 +1677,27 @@ var catchupMechanics = (function catchupMechanics(){
 	return function(){
 		rearMirror=keyThing.keystate(82) || (mouseInfo.buttons & 4); 	//R or middle mouse click
 			
-		thisGp=false;
+		activeGp=false;
 		//basic gamepad support
-		if (navigator.getGamepads() && navigator.getGamepads()[0] && navigator.getGamepads()[0].buttons && navigator.getGamepads()[0].buttons[10]){	//not sure which of these fails on if no gamepads connected
-														//also not sure what happens if 2 gamepads connected and 0th is disconnected.
 		
-			var thisGp=navigator.getGamepads()[0];	//not yet handling choosing one of multiple gamepads and keeping that gamepad selected.
-			var buttons = thisGp.buttons;
+		//oculus touch controllers are recognised as controllers.
+		//to work around, abuse fact that these don't have 10th button.
+		//find the 1st gamepad with button 10.
+
+		var gpads=navigator.getGamepads();
+		if (gpads){
+			for (gg in gpads){
+				thisgp = gpads[gg];
+				if (thisgp.buttons && thisgp.buttons[10] && thisgp.axes){
+					activeGp = thisgp;
+					break;
+				}
+			}
+		}
+		//TODO handle choosing one of multiple gamepads and keeping that gamepad selected.
+		
+		if (activeGp){	
+			buttons = activeGp.buttons;
 			
 			//buttons 0 to 15, on xbox controller are:
 			//A,B,X,Y
@@ -1690,7 +1707,7 @@ var catchupMechanics = (function catchupMechanics(){
 			//d-pad u,d,l,r
 			//button 16? don't know (there is a central xbox button but does nothing)
 			
-			var axes = thisGp.axes;
+			axes = activeGp.axes;
 			
 			//axes for xbox controller:
 			//left thumbstick left(-1) to right(+1)
