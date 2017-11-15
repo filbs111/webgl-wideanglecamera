@@ -548,7 +548,11 @@ function drawScene(frameTime){
 	stats.end();
 	stats.begin();
 	
-	if (guiParams.smoothMovement){catchupMechanics();}
+	if (guiParams.smoothMovement && !window.opener){catchupMechanics();}
+	
+	if (otherWindow){
+		otherWindow.postMessage({position:playerPosition}, "*");
+	}
 	
 	var var1 = parseFloat(guiParams.strength)*-0.125;
 	var var2 = parseFloat(10.0/guiParams.zoom);
@@ -1395,83 +1399,93 @@ function init(){
 	keyThing.setKeydownCallback(70,function(){			//70=F
 		goFullscreen(canvas);
 	});
+
+	if (!window.opener){	//this might cause bug - basically try to tell difference between window and "slave" window.
+							//this may cause controls to fail if page navigated to from elsewhere.
 	
-	window.addEventListener("keydown",function(evt){
-		console.log("key pressed : " + evt.keyCode);
-		var willPreventDefault=true;
-		var controlSpeed = guiParams.smoothMovement ? 0:0.1;
-		switch (evt.keyCode){
-			case 87:				//W
-				movePlayer([0,0,controlSpeed]);
-				break;
-			case 83:				//S
-				movePlayer([0,0,-controlSpeed]);
-				break;
-			case 65:				//A
-				movePlayer([controlSpeed,0,0]);
-				break;
-			case 68:				//D
-				movePlayer([-controlSpeed,0,0]);
-				break;
-			case 39:
-				turnPlayer(controlSpeed);
-				break;
-			case 37:
-				turnPlayer(-controlSpeed);
-				break;
-			case 81:				//Q
-				rollPlayer(-controlSpeed);	
-				break;
-			case 69:				//E
-				rollPlayer(controlSpeed);	
-				break;
-			case 32:				//spacebar
-				movePlayer([0,-controlSpeed,0]);
-				break;
-			case 17:				//ctrl
-				movePlayer([0,controlSpeed,0]);
-				break;
-			default:
-				willPreventDefault=false;
-				break;
-			case 38:
-				pitchPlayer(-controlSpeed);		//up arrow
-				break;
-			case 40:
-				pitchPlayer(controlSpeed);
-				break;
-			case 97:
-			case 98:
-			case 99:
-			case 100:
-			case 101:
-			case 102:
-			case 103:
-			case 104:
-			case 105:
-				//num pad keys
-				var presetnum = evt.keyCode - 96;
-				console.log("loading camera preset  " + presetnum );
-				setCamPreset(presetnum);
-				break;
-			case 49:
-			case 50:
-			case 51:
-			case 52:
-			case 53:
-			case 54:
-			case 55:
-			case 56:
-			case 57:
-				//regular number keys
-				var presetnum = evt.keyCode - 48;
-				console.log("loading camera preset " + presetnum );
-				setCamPreset(presetnum);
-				break;
-		}
-		constrainPlayerPositionToBox();
-		if (willPreventDefault){evt.preventDefault()};
-	})
+		keyThing.setKeydownCallback(71,function(){			//71=G
+				spawnNewWindow();
+		});
+	
+		window.addEventListener("keydown",function(evt){
+			console.log("key pressed : " + evt.keyCode);
+			var willPreventDefault=true;
+			var controlSpeed = guiParams.smoothMovement ? 0:0.1;
+			switch (evt.keyCode){
+				case 87:				//W
+					movePlayer([0,0,controlSpeed]);
+					break;
+				case 83:				//S
+					movePlayer([0,0,-controlSpeed]);
+					break;
+				case 65:				//A
+					movePlayer([controlSpeed,0,0]);
+					break;
+				case 68:				//D
+					movePlayer([-controlSpeed,0,0]);
+					break;
+				case 39:
+					turnPlayer(controlSpeed);
+					break;
+				case 37:
+					turnPlayer(-controlSpeed);
+					break;
+				case 81:				//Q
+					rollPlayer(-controlSpeed);	
+					break;
+				case 69:				//E
+					rollPlayer(controlSpeed);	
+					break;
+				case 32:				//spacebar
+					movePlayer([0,-controlSpeed,0]);
+					break;
+				case 17:				//ctrl
+					movePlayer([0,controlSpeed,0]);
+					break;
+				default:
+					willPreventDefault=false;
+					break;
+				case 38:
+					pitchPlayer(-controlSpeed);		//up arrow
+					break;
+				case 40:
+					pitchPlayer(controlSpeed);
+					break;
+				case 97:
+				case 98:
+				case 99:
+				case 100:
+				case 101:
+				case 102:
+				case 103:
+				case 104:
+				case 105:
+					//num pad keys
+					var presetnum = evt.keyCode - 96;
+					console.log("loading camera preset  " + presetnum );
+					setCamPreset(presetnum);
+					break;
+				case 49:
+				case 50:
+				case 51:
+				case 52:
+				case 53:
+				case 54:
+				case 55:
+				case 56:
+				case 57:
+					//regular number keys
+					var presetnum = evt.keyCode - 48;
+					console.log("loading camera preset " + presetnum );
+					setCamPreset(presetnum);
+					break;
+			}
+			constrainPlayerPositionToBox();
+			if (willPreventDefault){evt.preventDefault()};
+		})
+	
+	}
+	
 	
 	canvas = document.getElementById("mycanvas");
 	canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
@@ -1510,55 +1524,56 @@ function init(){
 	  }
 	}
 	
-	
-	canvas.addEventListener("mousedown", function(evt){	
-		console.log("mouse down");
-		console.log(evt);
-		mouseInfo.x = evt.offsetX;
-		mouseInfo.y = evt.offsetY;
-		mouseInfo.dragging = true;
-		mouseInfo.lastPointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
-		mouseInfo.buttons = evt.buttons;
-		evt.preventDefault();
-	});
-	canvas.addEventListener("mouseup", function(evt){
-		mouseInfo.dragging = false;
-		mouseInfo.buttons = evt.buttons;
-	});
-	canvas.addEventListener("mouseout", function(evt){
-		mouseInfo.dragging = false;
-		mouseInfo.buttons = 0;
-	});
-	canvas.addEventListener("mousemove", function(evt){
-		if (mouseInfo.dragging){
-			console.log("evt offsetX = " + evt.offsetX + ", offsetY = " + evt.offsetY);
-			console.log("moved : " + evt.movementX + ", movementY = " + evt.movementY);	//this is very nearly the same as the calculated version
-			console.log("calculated moved : " + (evt.offsetX - mouseInfo.x) + ", movementY = " + (evt.offsetY - mouseInfo.y) );
+	if (!window.opener){
+		canvas.addEventListener("mousedown", function(evt){	
+			console.log("mouse down");
+			console.log(evt);
 			mouseInfo.x = evt.offsetX;
 			mouseInfo.y = evt.offsetY;
+			mouseInfo.dragging = true;
+			mouseInfo.lastPointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
+			mouseInfo.buttons = evt.buttons;
+			evt.preventDefault();
+		});
+		canvas.addEventListener("mouseup", function(evt){
+			mouseInfo.dragging = false;
+			mouseInfo.buttons = evt.buttons;
+		});
+		canvas.addEventListener("mouseout", function(evt){
+			mouseInfo.dragging = false;
+			mouseInfo.buttons = 0;
+		});
+		canvas.addEventListener("mousemove", function(evt){
+			if (mouseInfo.dragging){
+				console.log("evt offsetX = " + evt.offsetX + ", offsetY = " + evt.offsetY);
+				console.log("moved : " + evt.movementX + ", movementY = " + evt.movementY);	//this is very nearly the same as the calculated version
+				console.log("calculated moved : " + (evt.offsetX - mouseInfo.x) + ", movementY = " + (evt.offsetY - mouseInfo.y) );
+				mouseInfo.x = evt.offsetX;
+				mouseInfo.y = evt.offsetY;
+				
+				var pointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
+				console.log("pointingDir = " + pointingDir);
+				
+				//get the direction of current and previous mouse position.
+				//do a cross product to work out the angle rotated
+				//and rotate the player by this amount
+				
+				var crossProd = crossProductHomgenous(pointingDir, mouseInfo.lastPointingDir);
+				mouseInfo.lastPointingDir = pointingDir;
+				
+				//rotate player 
+				rotatePlayer([ -crossProd.x / crossProd.w, crossProd.y / crossProd.w, crossProd.z / crossProd.w]);
+			}
 			
-			var pointingDir = getPointingDirectionFromScreenCoordinate({x:mouseInfo.x, y: mouseInfo.y});
-			console.log("pointingDir = " + pointingDir);
-			
-			//get the direction of current and previous mouse position.
-			//do a cross product to work out the angle rotated
-			//and rotate the player by this amount
-			
-			var crossProd = crossProductHomgenous(pointingDir, mouseInfo.lastPointingDir);
-			mouseInfo.lastPointingDir = pointingDir;
-			
-			//rotate player 
-			rotatePlayer([ -crossProd.x / crossProd.w, crossProd.y / crossProd.w, crossProd.z / crossProd.w]);
-		}
+			if (pointerLocked){
+				rotatePlayer([ 0.001* evt.movementY, 0.001* evt.movementX, 0]);	//TODO screen resolution dependent sensitivity.
+			}
+		});
 		
-		if (pointerLocked){
-			rotatePlayer([ 0.001* evt.movementY, 0.001* evt.movementX, 0]);	//TODO screen resolution dependent sensitivity.
-		}
-	});
-	
-	canvas.addEventListener("touchstart", handleTouchStart, false);
-	canvas.addEventListener("touchend", handleTouchEnd, false);
-	canvas.addEventListener("touchmove", handleTouchMove, false);
+		canvas.addEventListener("touchstart", handleTouchStart, false);
+		canvas.addEventListener("touchend", handleTouchEnd, false);
+		canvas.addEventListener("touchmove", handleTouchMove, false);
+	}
 	
 	initGL();
 	initTextureFramebuffer();
@@ -1570,7 +1585,7 @@ function init(){
 	initFullscreenBuffers();
 	initCubemapFramebuffer();	//experimental!!
 	initBuffers();
-	gl.clearColor(1.0, 1.0, 1.0, 1.0);
+	gl.clearColor(0.8, 0.8, 0.8, 1.0);
     gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
 	gl.cullFace(gl.FRONT);
@@ -1660,9 +1675,6 @@ var catchupMechanics = (function catchupMechanics(){
 		]);
 		
 		if (activeGp){
-		
-			console.log(activeGp);
-		
 			gpMove=[];
 			gpMove[0] = Math.abs(axes[0])>deadZone ? -moveAmount*axes[0] : 0; //lateral
 			gpMove[1] = Math.abs(axes[1])>deadZone ? moveAmount*axes[1] : 0; //vertical
@@ -1920,7 +1932,42 @@ function goFullscreen(elem){
 	} else if (elem.msRequestFullscreen) {
 		elem.msRequestFullscreen();
 	}
+	
+	elem.requestPointerLock();	//going fullscreen appears to disable pointer lock, and adding this here doesn't help the 1st time through. race condition?
+								//hitting F again (while fullscreened) will cause pointer lock here to do something.
 }
+
+
+
+window.addEventListener("message", function(evt){
+	//alert("recieved a message: "+ evt.data);
+	var evtdata = evt.data;
+	if (evtdata == "OPENED OK"){
+		otherWindow.postMessage("you opened OK!", "*");	//will send messages to synchronise player pose
+	}
+	if (evtdata.position){
+		setPlayerTranslation(evtdata.position);
+	}
+}, false);
+
+if (window.opener){
+	window.opener.postMessage("OPENED OK", "*");
+}
+
+var otherWindow;
+
+function spawnNewWindow(){
+	otherWindow = window.open(window.location.href, '_blank', "menubar=no,status=no,titlebar=no,toolbar=no");
+	//otherWindow.postMessage("mymessage", "*");	//this doesn't work. too soon? to work around, send message when recieve message that other window opened ok.
+	//TODO pass player matrix between windows
+}
+
+function sendMessage(){
+	otherWindow && otherWindow.postMessage("mymessage123", "*");
+}
+
+
+
 
 </script>
 
