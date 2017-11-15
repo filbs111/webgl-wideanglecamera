@@ -551,7 +551,7 @@ function drawScene(frameTime){
 	if (guiParams.smoothMovement && !window.opener){catchupMechanics();}
 	
 	if (otherWindow){
-		otherWindow.postMessage({position:playerPosition}, "*");
+		otherWindow.postMessage({position:playerPosition, matrix:playerMatrix}, "*");
 	}
 	
 	var var1 = parseFloat(guiParams.strength)*-0.125;
@@ -1948,6 +1948,11 @@ window.addEventListener("message", function(evt){
 	if (evtdata.position){
 		setPlayerTranslation(evtdata.position);
 	}
+	if (evtdata.matrix){
+		playerMatrix = evtdata.matrix;
+	}
+	
+	
 }, false);
 
 if (window.opener){
