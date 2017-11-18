@@ -582,8 +582,17 @@ function drawScene(frameTime){
 	}else{
 		mat4.translate(sshipActiveCameraMatrix,[0,0,guiParams.camFwdShift]);
 	}
-	mat4.multiply(sshipActiveCameraMatrix, playerMatrix, sshipActiveCameraMatrix);
-		
+	
+	if (guiParams.camType == 'standard'){
+		mat4.multiply(sshipActiveCameraMatrix, playerMatrix, sshipActiveCameraMatrix);
+	} else if (guiParams.camType == 'translateonly'){
+		mat4.translate(sshipActiveCameraMatrix, playerPosition);
+	} else if (guiParams.camType == 'landing'){
+		//TODO
+		//top-down option for landing spaceship with controls consistent with standard view.
+		//camera points down (in world). camera rotation is found by performing shortest rotation to player to point downward.
+	}
+	
 	if (rendertype == "straight"){
 		//draw the scene straight to the screen
 		
@@ -1304,6 +1313,7 @@ var guiParams={
 	camFwdShift: 0.5,
 	rearCamFwdShift: -0.6,
 	rearMirror180: false,
+	camType: 'standard',
 	resizeCanvas: true,
 	recalcParams: true,
 	gravity: 5,
@@ -1386,6 +1396,7 @@ function init(){
 	gui.add(guiParams, 'camFwdShift', 0,0.6,0.02);
 	gui.add(guiParams, 'rearCamFwdShift', -0.6,2,0.02);
 	gui.add(guiParams, 'rearMirror180');
+	gui.add(guiParams, 'camType', ['standard','translateonly','landing','othership']);
 	gui.add(guiParams, 'resizeCanvas');
 	gui.add(guiParams, 'recalcParams');
 
