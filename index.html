@@ -587,10 +587,11 @@ function drawScene(frameTime){
 		mat4.multiply(sshipActiveCameraMatrix, playerMatrix, sshipActiveCameraMatrix);
 	} else if (guiParams.camType == 'translateonly'){
 		mat4.translate(sshipActiveCameraMatrix, playerPosition);
-	} else if (guiParams.camType == 'landing'){
-		//TODO
-		//top-down option for landing spaceship with controls consistent with standard view.
-		//camera points down (in world). camera rotation is found by performing shortest rotation to player to point downward.
+	} else if (guiParams.camType == 'landing'){		
+		mat4.rotateX(sshipActiveCameraMatrix,Math.PI/2);	//rotate to point down. may be nicer to use another angle though.
+		setMatTranslation(sshipActiveCameraMatrix, [playerPosition[0],playerPosition[1]-1,playerPosition[2]]);
+
+		//TODO perform shortest rotation to player to point downward, mirror view, so controls consistent with standard view.
 	}
 	
 	if (rendertype == "straight"){
@@ -1824,10 +1825,13 @@ function rotatePlayer(vec){
 }
 
 function setPlayerTranslation(posArray){
-	playerMatrix[12]=0;	//zero translation components
-	playerMatrix[13]=0;
-	playerMatrix[14]=0;
-	mat4.translate(playerMatrix, posArray);
+	setMatTranslation(playerMatrix, posArray);
+}
+
+function setMatTranslation(mat, posArray){
+	//probably using mat4 wierdly so standard mat4.translate isn't working sensibly
+	mat[12]=0;mat[13]=0;mat[14]=0;
+	mat4.translate(mat, posArray);
 }
 
 function getPointingDirectionFromScreenCoordinate(coords){
