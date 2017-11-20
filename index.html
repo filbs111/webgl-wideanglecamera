@@ -588,10 +588,45 @@ function drawScene(frameTime){
 	} else if (guiParams.camType == 'translateonly'){
 		mat4.translate(sshipActiveCameraMatrix, playerPosition);
 	} else if (guiParams.camType == 'landing'){		
-		mat4.rotateX(sshipActiveCameraMatrix,Math.PI/2);	//rotate to point down. may be nicer to use another angle though.
+		//perform shortest rotation to player to point downward, mirror view, so controls consistent with standard view.
+		//magnitude of this rotation found by looking at down(world)-forward component of player matrix.
+		//axis or rotation is in horizontal plane. determined by 2 horizontal components of player forward vector in world
+		//rotate this axis by 90 degrees
+		
+		var cosAngleFromDown = playerMatrix[6];	//guess component.
+		var angleFromDown = Math.acos(cosAngleFromDown);
+		console.log(angleFromDown);
+		
+		// 0 1 2 3
+		// 4 5 6 7
+		// 8 9 10 11
+		
+		var spinAngle = Math.atan2(playerMatrix[4],playerMatrix[5]);	//fails for small angle - might give wacky results.
+						
+		var tempMat = mat4.create();
+		mat4.identity(tempMat);
+		
+			/*	
+		//look down on player, controls respond ok sensibly when player pointing down
+		mat4.rotate(tempMat, angleFromDown,[ Math.cos(spinAngle),-Math.sin(spinAngle),0]);	//almost certainly wrong
+		mat4.multiply(tempMat, playerMatrix, tempMat);	//might just directly set
+		mat4.multiply( sshipActiveCameraMatrix, tempMat, sshipActiveCameraMatrix);
 		setMatTranslation(sshipActiveCameraMatrix, [playerPosition[0],playerPosition[1]-1,playerPosition[2]]);
-
-		//TODO perform shortest rotation to player to point downward, mirror view, so controls consistent with standard view.
+		*/
+		/*	
+		//look up at player, controls respond ok sensibly when player pointing up
+		mat4.rotate(tempMat,Math.PI+angleFromDown,[ Math.cos(spinAngle),-Math.sin(spinAngle),0]);	//almost certainly wrong
+		mat4.multiply(tempMat, playerMatrix, tempMat);	//might just directly set
+		mat4.multiply( sshipActiveCameraMatrix, tempMat, sshipActiveCameraMatrix);
+		setMatTranslation(sshipActiveCameraMatrix, [playerPosition[0],playerPosition[1]+1,playerPosition[2]]);
+		*/
+		//look down at player, controls sensible when player pointing up.
+		mat4.rotate(tempMat,Math.PI+angleFromDown,[ Math.cos(spinAngle),-Math.sin(spinAngle),0]);	//almost certainly wrong
+		mat4.multiply(tempMat, playerMatrix, tempMat);	//might just directly set
+		mat4.scale(sshipActiveCameraMatrix, [1,1,-1]);
+		mat4.multiply( sshipActiveCameraMatrix, tempMat, sshipActiveCameraMatrix);
+		gl.cullFace(gl.BACK);
+		setMatTranslation(sshipActiveCameraMatrix, [playerPosition[0],playerPosition[1]-1,playerPosition[2]]);
 	}
 	
 	if (rendertype == "straight"){
